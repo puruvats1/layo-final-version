@@ -251,7 +251,7 @@ export const PrefsFlow: React.FC<{ prefs: Prefs; set: (p: Prefs) => void; progre
       <h1 className="t-title">{titles[step]}</h1>
       {subs[step] ? <p className="t-body c2">{step === 1 ? <><Petal size={14} strong style={{ marginRight: 6, verticalAlign: -2 }} />{subs[1]}</> : subs[step]}</p> : null}
       {step === 0 ? (<>
-        <div className="field"><label htmlFor="pname">Room name</label><div className="input"><input id="pname" className="kbd" value={prefs.name} onChange={(e) => set({ ...prefs, name: e.target.value })} /></div></div>
+        <div className="field"><label htmlFor="pname">Room name</label><div className="input"><input id="pname" className="kbd" placeholder="Name your room" value={prefs.name} onChange={(e) => set({ ...prefs, name: e.target.value })} /></div></div>
         <RefPicker prefs={prefs} set={set} />
       </>) : step === 1 ? <ActivityPicker prefs={prefs} set={set} /> : step === 2 ? <PriorityPicker prefs={prefs} set={set} /> : (
         <div className="col g3">

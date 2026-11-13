@@ -81,7 +81,7 @@ export const PRESETS: { id: string; name: string; colors: string[] }[] = [
   { id: 'earth', name: 'Earthy boho', colors: ['#a3361f', '#f7dd85', '#4f6b3a', '#e8dccb'] },
   { id: 'mono', name: 'Quiet mono', colors: ['#2b2522', '#786c65', '#d9cab5', '#fbf7f1'] },
 ];
-export const DEFAULT_PREFS: Prefs = { given: false, name: "Aarav's room", refs: [], preset: 'warm', main: [], some: [], priorities: [], words: [] };
+export const DEFAULT_PREFS: Prefs = { given: false, name: '', refs: [], preset: 'warm', main: [], some: [], priorities: [], words: [] };
 
 /* ---------------- geometry ---------------- */
 type Rect = [number, number, number, number]; // x0 x1 z0 z1

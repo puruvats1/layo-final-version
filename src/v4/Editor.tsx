@@ -51,7 +51,7 @@ export const Editor: React.FC<{ prefs: Prefs; setPrefs: (p: Prefs) => void; setu
   const hold = useRef<{ id: string; x: number; y: number; fx: number; fy: number; t: number } | null>(null);
   const justDragged = useRef(false);
   const drawerEl = useRef<HTMLDivElement>(null);
-  const dropRef = useRef<(id: string, at: [number, number], y?: number) => boolean>(() => true);
+  const dropRef = useRef<(id: string, at: [number, number], y?: number, rot?: number) => boolean>(() => true);
   // The tile turns into the object in the room as it leaves the drawer, without lifting the finger; back over the drawer, it turns back
   const draftRef = useRef<{ start: (id: string, pt: { at: [number, number]; y?: number }) => void; cancel: () => void; pointAt: (id: string, cx: number, cy: number) => { at: [number, number]; y?: number } | null }>({ start: () => {}, cancel: () => {}, pointAt: () => null });
   const press = useRef<{ x: number; y: number } | null>(null);
@@ -79,7 +79,7 @@ export const Editor: React.FC<{ prefs: Prefs; setPrefs: (p: Prefs) => void; setu
         if (d.phase === 'drag' && !inDrawer) { const f = draftRef.current.pointAt(d.id, e.clientX, e.clientY); if (f) { const nd = { ...d, phase: 'draft' as const }; dndRef.current = nd; setDnd(nd); draftRef.current.start(d.id, f); } }
         else if (d.phase === 'draft') {
           if (inDrawer) { draftRef.current.cancel(); const nd = { ...d, phase: 'drag' as const }; dndRef.current = nd; setDnd(nd); }
-          else { const f = draftRef.current.pointAt(d.id, e.clientX, e.clientY); if (f) api.current?.moveCarry(d.id, f.at, f.y); }
+          else api.current?.carryPoint(d.id, e.clientX, e.clientY);
         }
       }
     };
@@ -89,8 +89,8 @@ export const Editor: React.FC<{ prefs: Prefs; setPrefs: (p: Prefs) => void; setu
       const d = dndRef.current;
       if (d?.phase === 'draft') { // let go in the room: it lands where it is, at the nearest free spot
         justDragged.current = true; setTimeout(() => { justDragged.current = false; }, 80);
-        const at = e.type === 'pointerup' ? api.current?.liveAt(d.id) : null;
-        const ok = at ? dropRef.current(d.id, at, api.current?.liveY(d.id)) : false;
+        const at = e.type === 'pointerup' ? api.current?.liveAt(d.id) : null, liveY = api.current?.liveY(d.id); api.current?.carryPoint(null);
+        const ok = at ? dropRef.current(d.id, at, liveY) : false;
         if (!ok) { draftRef.current.cancel(); setDnd({ ...d, phase: 'back' }); setTimeout(() => setDnd(null), 280); } else setDnd(null);
         return;
       }
@@ -207,7 +207,7 @@ export const Editor: React.FC<{ prefs: Prefs; setPrefs: (p: Prefs) => void; setu
   useEffect(() => { wake().then(setBrainReady); }, []);
   const [layouts, setLayouts] = useState<Layout[]>([{ id: 'l1', name: 'Room as scanned', objs: clone(START), palette: 'warm_studio', edited: false }]);
   const [layoutId, setLayoutId] = useState('l1');
-  const [saveName, setSaveName] = useState('My room');
+  const [saveName, setSaveName] = useState('');
   const pending = useRef<(() => void) | null>(null);
   const api = useRef<StageApi | null>(null);
   const layout = layouts.find((l) => l.id === layoutId)!;
@@ -315,11 +315,11 @@ export const Editor: React.FC<{ prefs: Prefs; setPrefs: (p: Prefs) => void; setu
     }
     return null;
   };
-  const onDrop = (id: string, at: [number, number], y?: number): boolean => {
-    const o = find(id)!, dropped = o.wall ? wallSnap(at, o.dims) : place(at[0], at[1], o), spot = o.wall ? dropped : findSpot(id, dropped);
+  const onDrop = (id: string, at: [number, number], y?: number, turned?: number): boolean => {
+    const o0 = find(id)!, o = turned !== undefined && !o0.wall ? { ...o0, rot: turned } : o0, dropped = o.wall ? wallSnap(at, o.dims) : place(at[0], at[1], o), spot = o.wall ? dropped : findSpot(id, dropped);
     setLifted([]); setPlacing(null); setSignal(null);
     if (!spot) { setToast({ text: `There is no free spot near there for the ${o.name.toLowerCase()}.` }); return false; }
-    const dropMap = moveWithPartner(id, spot, o.wall ? wallRot(spot) : undefined); if (o.wall && y !== undefined) dropMap[id] = { ...dropMap[id], y };
+    const dropMap = moveWithPartner(id, spot, o.wall ? wallRot(spot) : turned !== undefined && Math.abs(turned - o0.rot) > 1e-4 ? turned : undefined); if (o.wall && y !== undefined) dropMap[id] = { ...dropMap[id], y };
     const next = apply(dropMap);
     if (Math.hypot(spot[0] - dropped[0], spot[1] - dropped[1]) > 0.02) { const bl = overlapOf({ ...o, at: dropped, inRoom: true }, objs); setToast({ text: bl ? `Moved clear of the ${short(bl.name).toLowerCase()}` : 'Moved clear', ms: 1800 }); }
     setMenuFor(id); speak(id, next); return true;
@@ -328,7 +328,7 @@ export const Editor: React.FC<{ prefs: Prefs; setPrefs: (p: Prefs) => void; setu
   draftRef.current = {
     pointAt: (id, cx, cy) => { if (find(id)?.wall) { const w = api.current?.wallAt(cx, cy); return w ? { at: [w[0], w[2]], y: w[1] } : null; } const f = api.current?.floorAt(cx, cy); return f ? { at: f } : null; },
     start: (id, pt) => { const o = find(id); if (!o) return; const at = o.wall ? wallSnap(pt.at, o.dims) : place(pt.at[0], pt.at[1], o); apply({ [id]: { inRoom: true, at, ...(o.wall ? { rot: wallRot(at), y: Math.max(o.dims[1] / 2 + 0.4, Math.min(2.3 - o.dims[1] / 2, pt.y ?? 1.45)) } : {}) } }); setLifted([id]); setHeld(true); setMenuFor(null); setCard(null); },
-    cancel: () => { setHist((h) => ({ list: h.list.slice(0, h.i), i: Math.max(0, h.i - 1) })); setLifted([]); setSignal(null); },
+    cancel: () => { api.current?.carryPoint(null); setHist((h) => ({ list: h.list.slice(0, h.i), i: Math.max(0, h.i - 1) })); setLifted([]); setSignal(null); },
   };
   const remove = (ids: string[]) => { apply(Object.fromEntries(ids.map((id) => [id, { inRoom: false }]))); setRemoveRun((r) => r + 1); setMenuFor(null); setSelected([]); setCard(null); setToast({ text: ids.length > 1 ? `${ids.length} things moved to Assets` : `${find(ids[0])?.name} moved to Assets`, undo: true }); };
   // Where something new goes: in front of the view; a poster, on the wall in front of it, at a good height
@@ -695,12 +695,12 @@ export const Editor: React.FC<{ prefs: Prefs; setPrefs: (p: Prefs) => void; setu
             {wide ? null : <div className="seg seg-ic"><button className={side === 'ai' ? 'is-on' : ''} aria-label="AI" aria-pressed={side === 'ai'} title="AI" onClick={() => setSide('ai')}><AiIcon /></button><button className={side === 'assets' ? 'is-on' : ''} aria-label="Assets" aria-pressed={side === 'assets'} title="Assets" onClick={() => setSide('assets')}><Ic n="grid" /></button></div>}
             {!wide && side !== 'ai' ? null : <div className="col grow" style={{ gap: 16 }}>
               {wide ? <div className="glass ask askbar">
-                  {activeCtx.length ? <span className="ctx"><Petal size={12} strong /><Marquee>{ctxLabel ?? ''}</Marquee></span> : null}
+                  
                   <input ref={inputRef} className="kbd" placeholder={aiBusy ? 'Thinking' : 'Ask Layo'} value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && send(input)} />
                   <button className={`btn-icon ${listening ? 'is-on mic-live' : ''}`} aria-label={listening ? 'Stop listening' : 'Speak to Layo'} aria-pressed={listening} onClick={toggleMic}><Ic n="mic" /></button>
                   <button className="send" aria-label="Send" onClick={() => send(input)}><Ic n="send" /></button>
                 </div>
-                : side === 'ai' ? <div className="glass ask askbar" role="button" tabIndex={0} style={{ cursor: 'pointer' }} onClick={() => setAskOpen(true)} onKeyDown={(e) => e.key === 'Enter' && setAskOpen(true)}>{activeCtx.length ? <span className="ctx"><Petal size={12} strong /><Marquee>{ctxLabel ?? ''}</Marquee></span> : null}<span className="ph" style={{ overflow: 'hidden', whiteSpace: 'nowrap' }} role="status">{aiBusy ? 'Thinking' : 'Ask Layo'}</span><button className={`btn-icon ${listening ? 'is-on mic-live' : ''}`} aria-label={listening ? 'Stop listening' : 'Speak to Layo'} aria-pressed={listening} onClick={(e) => { e.stopPropagation(); toggleMic(); }}><Ic n="mic" /></button><span className="send" aria-hidden="true"><Ic n="send" /></span></div>
+                : side === 'ai' ? <div className="glass ask askbar" role="button" tabIndex={0} style={{ cursor: 'pointer' }} onClick={() => setAskOpen(true)} onKeyDown={(e) => e.key === 'Enter' && setAskOpen(true)}><span className="ph" style={{ overflow: 'hidden', whiteSpace: 'nowrap' }} role="status">{aiBusy ? 'Thinking' : 'Ask Layo'}</span><button className={`btn-icon ${listening ? 'is-on mic-live' : ''}`} aria-label={listening ? 'Stop listening' : 'Speak to Layo'} aria-pressed={listening} onClick={(e) => { e.stopPropagation(); toggleMic(); }}><Ic n="mic" /></button><span className="send" aria-hidden="true"><Ic n="send" /></span></div>
                 : null}
             </div>}
             {!wide && side !== 'ai' ? <button className="btn glass" style={{ marginLeft: 'auto', minHeight: 56 }} onClick={() => setSheet('addsrc')}><Ic n="plus" />Add object</button> : null}
@@ -808,8 +808,8 @@ export const Editor: React.FC<{ prefs: Prefs; setPrefs: (p: Prefs) => void; setu
         </Dialog>) : null}
       {dialog === 'save' ? (
         <Dialog title="Save layout" text={stagedIds.length ? 'This saves the room as last confirmed. Staged changes are not included.' : 'Name the room as it is now.'} onClose={() => setDialog(null)}>
-          <div className="input is-focus"><input className="kbd" autoFocus value={saveName} onChange={(e) => setSaveName(e.target.value)} /></div>
-          <Primary disabled={!saveName.trim()} onClick={() => { addLayout(saveName.trim(), committed, cur.cpal, !stagedIds.length); setSavedAt(Date.now()); setDialog(null); setToast({ text: `Saved "${saveName.trim()}".` }); setSaveName('Weekend layout'); }}>Save</Primary><button className="btn btn-ghost" onClick={() => setDialog(null)}>Cancel</button>
+          <div className="input is-focus"><input className="kbd" autoFocus placeholder="Name this layout" value={saveName} onChange={(e) => setSaveName(e.target.value)} /></div>
+          <Primary disabled={!saveName.trim()} onClick={() => { addLayout(saveName.trim(), committed, cur.cpal, !stagedIds.length); setSavedAt(Date.now()); setDialog(null); setToast({ text: `Saved "${saveName.trim()}".` }); setSaveName(''); }}>Save</Primary><button className="btn btn-ghost" onClick={() => setDialog(null)}>Cancel</button>
         </Dialog>) : null}
     </div>
   );

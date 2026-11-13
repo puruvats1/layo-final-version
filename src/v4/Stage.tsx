@@ -19,14 +19,14 @@ const LIGHT = { preset: 'natural_daylight', colorTempK: 5500, intensity: 1 } as 
 export interface Ghost { id: string; dims: Dims; at: [number, number]; rot: number; kind?: Obj['kind']; focus?: boolean; loading?: boolean }
 export interface Pin { id: string; pos?: [number, number, number]; follow?: string; node: React.ReactNode; shift?: string; clamp?: boolean; fit?: boolean; with?: string }
 export interface Signal { line?: [number, number, number]; ring?: boolean; frame?: [number, number, number]; tone?: string; zone?: [number, number, number, number]; hot?: boolean; text: string }
-export interface StageApi { lookAt: (x: number, z: number, lat?: number) => void; centre: () => [number, number]; floorAt: (clientX: number, clientY: number) => [number, number] | null; inView: (pts: [number, number, number][]) => boolean; moving: () => boolean; wallAt: (clientX: number, clientY: number) => [number, number, number] | null; moveCarry: (id: string, at: [number, number], y?: number) => void; liveY: (id: string) => number | undefined; liveAt: (id: string) => [number, number] | null }
+export interface StageApi { lookAt: (x: number, z: number, lat?: number) => void; centre: () => [number, number]; floorAt: (clientX: number, clientY: number) => [number, number] | null; inView: (pts: [number, number, number][]) => boolean; moving: () => boolean; wallAt: (clientX: number, clientY: number) => [number, number, number] | null; moveCarry: (id: string, at: [number, number], y?: number) => void; carryPoint: (id: string | null, clientX?: number, clientY?: number) => void; liveY: (id: string) => number | undefined; liveAt: (id: string) => [number, number] | null }
 interface Props {
   objs: Obj[]; boxIds: string[]; liftedIds: string[]; selected: string[];
   was: Ghost[]; ghosts: Ghost[]; pins: Pin[]; palette: string;
   mode: 'edit' | 'look' | 'rotate'; rotateId?: string | null; soft?: boolean;
   signal?: (id: string, at: [number, number]) => Signal | null;
   onTap?: (id: string | null) => void; onHold?: (id: string) => void; onHoldRelease?: (id: string) => void;
-  onDrop?: (id: string, at: [number, number], y?: number) => boolean | void; onRotated?: (id: string, rot: number) => void;
+  onDrop?: (id: string, at: [number, number], y?: number, rot?: number) => boolean | void; onRotated?: (id: string, rot: number) => void;
   onSignal?: (s: Signal | null) => void; apiRef?: React.MutableRefObject<StageApi | null>;
   start?: [number, number];
   /** Look around by moving the phone instead of dragging. Touch still taps and holds. */
@@ -67,7 +67,7 @@ export const Stage: React.FC<Props> = (props) => {
   const S = useRef<{
     renderer: THREE.WebGLRenderer; scene: THREE.Scene; camera: THREE.PerspectiveCamera; room: Room3DScene;
     overlay: THREE.Group; sig: THREE.Group; cubs: Record<string, THREE.Object3D>; live: Record<string, { at: [number, number]; rot: number; y?: number }>;
-    lon: number; lat: number; toLon: number | null; drag: any; w: number; h: number; gy: any; dirty: boolean; last: string; uT: { value: number }; gcubs: Record<string, THREE.Object3D>; glive: Record<string, { at: [number, number] }>;
+    lon: number; lat: number; toLon: number | null; drag: any; w: number; h: number; gy: any; dirty: boolean; last: string; carry: { id: string; cx: number; cy: number } | null; uT: { value: number }; gcubs: Record<string, THREE.Object3D>; glive: Record<string, { at: [number, number] }>;
   } | null>(null);
 
   // ---- build once
@@ -82,7 +82,7 @@ export const Stage: React.FC<Props> = (props) => {
     scene.add(room.group);
     const overlay = new THREE.Group(), sig = new THREE.Group(); scene.add(overlay, sig);
     const camera = new THREE.PerspectiveCamera(FOV_MAX, 1, 0.1, 100); // starts at the widest view, for the best coverage of the room
-    const st: NonNullable<typeof S.current> = { renderer, scene, camera, room, overlay, sig, cubs: {}, live: {}, lon: P.current.start?.[0] ?? -30, lat: P.current.start?.[1] ?? -22, toLon: null as number | null, drag: null as any, w: 1, h: 1, gy: null, dirty: true, last: '', gcubs: {}, glive: {}, uT: { value: 0 } };
+    const st: NonNullable<typeof S.current> = { renderer, scene, camera, room, overlay, sig, cubs: {}, live: {}, lon: P.current.start?.[0] ?? -30, lat: P.current.start?.[1] ?? -22, toLon: null as number | null, drag: null as any, w: 1, h: 1, gy: null, dirty: true, last: '', gcubs: {}, glive: {}, uT: { value: 0 }, carry: null };
     S.current = st;
     // Room lighting: the flat ambient fill gives way to a sky and floor bounce, and the two window lights become a warm key with real shadows
     scene.add(new THREE.HemisphereLight(0xfff4e6, 0xc9b49a, 0.75));
@@ -122,6 +122,10 @@ export const Stage: React.FC<Props> = (props) => {
       const o = P.current.objs.find((x) => x.id === id), L = st.live[id]; if (!o || !L) return;
       const at = wallSnap([pt[0], pt[2]], o.dims); L.at = at; L.rot = wallRot(at); L.y = Math.max(o.dims[1] / 2 + 0.4, Math.min(2.3 - o.dims[1] / 2, pt[1]));
       const c = st.cubs[id]; if (c) { c.position.set(at[0], L.y, at[1]); c.rotation.y = L.rot; }
+    };
+    const carryStep = () => { // put what is being carried under the finger, for the view as it is now
+      const c = st.carry; if (!c || !st.live[c.id]) return; camera.updateMatrixWorld(); setRay({ clientX: c.cx, clientY: c.cy });
+      if (P.current.objs.find((x) => x.id === c.id)?.wall) { const wp = wallPoint(); if (wp) moveWall(c.id, wp); } else { const fh = floorHit(); if (fh) moveTo(c.id, fh); }
     };
     const floorHit = (): [number, number] | null => { const d = ray.ray.direction, o = ray.ray.origin; if (d.y > -0.05) return null; const t = -o.y / d.y; return [o.x + d.x * t, o.z + d.z * t]; };
     const pick = (): string | null => {
@@ -207,20 +211,31 @@ export const Stage: React.FC<Props> = (props) => {
     };
 
     const ptrs = new Map<number, { x: number; y: number }>();
-    const spread = () => { const [a, b] = [...ptrs.values()]; return Math.hypot(a.x - b.x, a.y - b.y) || 1; };
+    const mid = () => { const [a, b] = [...ptrs.values()]; return (a.y + b.y) / 2; }; // two fingers swiping up or down: the field of view
+    const twistAngle = () => { const [a, b] = [...ptrs.values()]; return Math.atan2(b.y - a.y, b.x - a.x); };
+    // With an object held, a second finger twists it on the floor (about its upright axis); the finger holding it keeps carrying it
+    const updateTwist = (d: any) => {
+      const L = st.live[d.id]; if (!L) return;
+      let rot = d.twist.rot0 - (twistAngle() - d.twist.a0); const q = Math.round(rot / (Math.PI / 2)) * (Math.PI / 2);
+      if (Math.abs(rot - q) < 0.1) { rot = q; if (!d.twist.snap) buzz(6); d.twist.snap = true; } else d.twist.snap = false;
+      L.rot = rot; const c = st.cubs[d.id]; if (c) c.rotation.y = rot; st.dirty = true;
+    };
     const zoom = (fov: number) => { camera.fov = Math.max(FOV_MIN, Math.min(FOV_MAX, fov)); camera.updateProjectionMatrix(); st.dirty = true; };
     const down = (e: PointerEvent) => {
       P.current.onTouch?.();
       ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (ptrs.size === 2 && (!st.drag || st.drag.kind === 'wait' || st.drag.kind === 'look')) { // a second finger turns the gesture into a pinch
+      if (ptrs.size === 2 && st.drag && (st.drag.kind === 'held' || st.drag.kind === 'drag') && st.live[st.drag.id] && !P.current.objs.find((x) => x.id === st.drag.id)?.wall) { // an object is held: the second finger twists it
+        st.drag.kind = 'drag'; st.drag.moved = true; st.drag.twist = { a0: twistAngle(), rot0: st.live[st.drag.id].rot, snap: false }; return;
+      }
+      if (ptrs.size === 2 && (!st.drag || st.drag.kind === 'wait' || st.drag.kind === 'look')) { // two fingers, nothing held: a vertical swipe changes the field of view
         if (st.drag) clearTimeout(st.drag.t);
-        st.drag = { kind: 'pinch', d0: spread(), fov0: camera.fov, moved: true, t: 0 }; return;
+        st.drag = { kind: 'pinch', y0: mid(), fov0: camera.fov, moved: true, t: 0 }; return;
       }
       if (st.drag) return;
       try { el.setPointerCapture(e.pointerId); } catch { /* fine */ }
       setRay(e);
       const p = P.current;
-      const d: any = { x: e.clientX, y: e.clientY, lx: e.clientX, lon: st.lon, lat: st.lat, kind: 'wait', id: null, moved: false, t: 0 };
+      const d: any = { pid: e.pointerId, x: e.clientX, y: e.clientY, lx: e.clientX, lon: st.lon, lat: st.lat, kind: 'wait', id: null, moved: false, t: 0 };
       st.toLon = null;
       if (p.mode === 'rotate' && p.rotateId) { d.kind = 'rotate'; d.id = p.rotateId; d.rot0 = st.live[p.rotateId]?.rot ?? 0; d.snap = false;
         // A linked pair turns as one, about the middle between them
@@ -245,7 +260,9 @@ export const Stage: React.FC<Props> = (props) => {
     const move = (e: PointerEvent) => {
       if (ptrs.has(e.pointerId)) ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
       const d = st.drag; if (!d) return;
-      if (d.kind === 'pinch') { if (ptrs.size >= 2) zoom(d.fov0 * d.d0 / spread()); return; }
+      if (d.kind === 'pinch') { if (ptrs.size >= 2) zoom(d.fov0 + (mid() - d.y0) * 0.12); return; } // swipe up: closer; swipe down: wider
+      if (d.twist && ptrs.size >= 2) updateTwist(d);
+      if (d.pid !== undefined && e.pointerId !== d.pid) return; // only the finger holding it carries it
       const dx = e.clientX - d.x, dy = e.clientY - d.y; d.lx = e.clientX; d.ly = e.clientY;
       if (!d.moved && Math.hypot(dx, dy) > 7) { d.moved = true; if (d.kind === 'wait') { clearTimeout(d.t); d.kind = 'look'; } else if (d.kind === 'held') d.kind = 'drag'; else if (d.kind === 'gheld') d.kind = 'gdrag'; }
       if (d.kind === 'look') { if (P.current.gyro) return; st.lon = d.lon - dx * 0.22; st.lat = Math.max(-70, Math.min(55, d.lat + dy * 0.16)); }
@@ -267,7 +284,9 @@ export const Stage: React.FC<Props> = (props) => {
     const up = (e: PointerEvent) => {
       st.dirty = true; ptrs.delete(e.pointerId);
       const d = st.drag; if (!d) return;
-      if (d.kind === 'pinch') { if (ptrs.size < 2) st.drag = null; return; } st.drag = null; clearTimeout(d.t);
+      if (d.kind === 'pinch') { if (ptrs.size < 2) st.drag = null; return; }
+      if (d.twist && e.pointerId !== d.pid) { d.twist = null; return; } // the twisting finger lifts: the object stays held and turned
+      st.drag = null; clearTimeout(d.t);
       const p = P.current;
       if (d.kind === 'wait') p.onTap?.(d.id);
       else if (d.kind === 'held') p.onHoldRelease?.(d.id);
@@ -275,7 +294,7 @@ export const Stage: React.FC<Props> = (props) => {
       else if (d.kind === 'drag') {
         drawSignal(null); bad = null;
         // The editor drops it at the nearest free spot; only if there is none does it go back to where it was
-        if (p.onDrop?.(d.id, st.live[d.id].at, st.live[d.id].y) === false) {
+        if (p.onDrop?.(d.id, st.live[d.id].at, st.live[d.id].y, st.live[d.id].rot) === false) {
           for (const q of [d.id, p.objs.find((x) => x.id === d.id)?.link]) { const ob = p.objs.find((x) => x.id === q); if (!ob || !st.live[ob.id] || !p.liftedIds.includes(ob.id)) continue; st.live[ob.id].at = [ob.at[0], ob.at[1]]; const cb = st.cubs[ob.id]; if (cb) { cb.position.set(ob.at[0], cb.position.y, ob.at[1]); setBoxLook(cb, C.paper, 0.26); } }
         }
       }
@@ -291,21 +310,35 @@ export const Stage: React.FC<Props> = (props) => {
     const frame = () => {
       raf = requestAnimationFrame(frame);
       const d = st.drag;
-      if ((d?.kind === 'drag' || d?.kind === 'gdrag') && d.ly !== undefined) { // pan at the screen edge
+      if ((d?.kind === 'drag' || d?.kind === 'gdrag') && d.ly !== undefined && !st.gy?.got) { // pan at the screen edge (not needed when the phone is the view)
         const r = el.getBoundingClientRect(), k = d.lx - r.left < 40 ? -0.9 : d.lx - r.left > r.width - 40 ? 0.9 : 0;
         if (k) { st.lon += k; aim(); setRay({ clientX: d.lx, clientY: d.ly }); if (d.kind === 'drag' && P.current.objs.find((x) => x.id === d.id)?.wall) { const wp = wallPoint(); if (wp) moveWall(d.id, wp); } else { const fh = floorHit(); if (fh) (d.kind === 'gdrag' ? moveGhost : moveTo)(d.id, [fh[0] + d.off[0], fh[1] + d.off[1]]); } }
       }
       if (st.toLon !== null) { const diff = ((st.toLon - st.lon + 540) % 360) - 180; st.lon += diff * 0.12; st.lat += (toLat - st.lat) * 0.12; if (Math.abs(diff) < 0.3) st.toLon = null; }
-      // Gyro look-around: the phone's turn and tilt since it was last re-anchored move the view. Re-anchor after any other camera move.
+      // Gyro look-around. The view is where the phone's back camera points: the tilt comes from gravity, so the floor of the room is the real
+      // ground, and the turn is counted from the heading the room was based on. A carried object keeps moving under the finger as the view moves.
       const gy = st.gy;
       if (gy?.got) {
-        if (st.toLon !== null || d?.kind === 'drag' || d?.kind === 'gdrag') gy.rebase = true;
+        const dr = Math.PI / 180, ca = Math.cos(gy.a * dr), sa = Math.sin(gy.a * dr), sb = Math.sin(gy.b * dr), cb = Math.cos(gy.b * dr), sg = Math.sin(gy.g * dr), cg = Math.cos(gy.g * dr);
+        const dx = -(ca * sg + sa * sb * cg), dy = -(sa * sg - ca * sb * cg), dz = -(cb * cg); // the back camera's direction: east, north, up
+        const el = Math.asin(Math.max(-1, Math.min(1, dz))) / dr, az = Math.atan2(dx, dy) / dr;
+        if (st.toLon !== null) gy.rebase = true; // the view is gliding to a spot: take the heading again afterwards
         else {
-          if (gy.rebase) { gy.a0 = gy.a; gy.b0 = gy.b; gy.lon0 = st.lon; gy.lat0 = st.lat; gy.rebase = false; }
-          st.lon = gy.lon0 - (((gy.a - gy.a0 + 540) % 360) - 180); st.lat = Math.max(-70, Math.min(55, gy.lat0 + (gy.b - gy.b0)));
+          if (gy.rebase) { gy.az0 = az; gy.lon0 = st.lon; gy.rebase = false; }
+          st.lon = gy.lon0 + (((az - gy.az0 + 540) % 360) - 180); st.lat = Math.max(-85, Math.min(85, el));
         }
       }
       aim();
+      if (gy?.got) {
+        const dd = st.drag; // an object held under the finger follows the finger as the view moves
+        if ((dd?.kind === 'drag' || dd?.kind === 'gdrag') && dd.ly !== undefined) {
+          camera.updateMatrixWorld(); setRay({ clientX: dd.lx, clientY: dd.ly });
+          if (dd.kind === 'gdrag') { const fh = floorHit(); if (fh) moveGhost(dd.id, [fh[0] + dd.off[0], fh[1] + dd.off[1]]); }
+          else if (P.current.objs.find((x) => x.id === dd.id)?.wall) { const wp = wallPoint(); if (wp) moveWall(dd.id, wp); }
+          else { const fh = floorHit(); if (fh) moveTo(dd.id, [fh[0] + dd.off[0], fh[1] + dd.off[1]]); }
+        }
+        if (st.carry) carryStep();
+      }
       if (P.current.rendering || P.current.ghosts.some((g) => g.loading)) { st.uT.value = performance.now() / 1000; st.dirty = true; } // the sheen moves, so keep drawing
       const cs = `${st.lon.toFixed(3)},${st.lat.toFixed(3)},${camera.fov.toFixed(2)}`;
       if (!st.dirty && !st.drag && cs === st.last) return; // nothing moved: skip the draw
@@ -348,6 +381,7 @@ export const Stage: React.FC<Props> = (props) => {
       lookAt: (x, z, lat) => { st.toLon = Math.atan2(z, x) / DEG; toLat = lat ?? -24; },
       centre: () => { const th = st.lon * DEG; return [Math.cos(th) * 0.8, Math.sin(th) * 0.8]; },
       moving: () => st.toLon !== null,
+      carryPoint: (id, cx, cy) => { st.carry = id ? { id, cx: cx ?? 0, cy: cy ?? 0 } : null; if (id) carryStep(); },
       moveCarry: (id, at, y) => { if (!st.live[id]) return; const ob = P.current.objs.find((x) => x.id === id); if (ob?.wall && y !== undefined) moveWall(id, [at[0], y, at[1]]); else moveTo(id, at); },
       liveY: (id) => st.live[id]?.y, // carry an object that the editor is holding (a tile dragged out of the drawer)
       liveAt: (id) => (st.live[id] ? [st.live[id].at[0], st.live[id].at[1]] : null),
@@ -378,8 +412,8 @@ export const Stage: React.FC<Props> = (props) => {
   // ---- gyro look-around
   useEffect(() => {
     const st = S.current; if (!st || !props.gyro) return;
-    const gy = { a: 0, b: 0, a0: 0, b0: 0, lon0: 0, lat0: 0, got: false, rebase: true }; st.gy = gy;
-    const on = (e: DeviceOrientationEvent) => { if (e.alpha == null || e.beta == null) return; gy.a = e.alpha; gy.b = e.beta; gy.got = true; };
+    const gy = { a: 0, b: 0, g: 0, az0: 0, lon0: 0, got: false, rebase: true }; st.gy = gy;
+    const on = (e: DeviceOrientationEvent) => { if (e.alpha == null || e.beta == null) return; gy.a = e.alpha; gy.b = e.beta; gy.g = e.gamma ?? 0; gy.got = true; };
     window.addEventListener('deviceorientation', on);
     const t = setTimeout(() => { if (!gy.got) P.current.onGyroFail?.(); }, 1500);
     return () => { window.removeEventListener('deviceorientation', on); clearTimeout(t); if (st.gy === gy) st.gy = null; };
