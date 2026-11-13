@@ -1,0 +1,17 @@
+# Keys and secrets must never be uploaded with a deploy. They belong in Vercel's encrypted
+# environment variables (`npx vercel env add GEMINI_API_KEY production`), not in the upload.
+# (A .vercelignore replaces .gitignore for `vercel deploy`, so the usual entries are repeated.)
+.env
+.env.*
+*.pem
+*.key
+
+node_modules/
+build/
+dist/
+coverage/
+.DS_Store
+*.log
+.antigravity/
+.aistudio/
+.claude/settings.local.json

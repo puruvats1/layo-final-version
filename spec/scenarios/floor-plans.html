@@ -1,0 +1,459 @@
+<title>Kith Scenario Plans</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a drafting sheet. Step list on the left, the plan in the middle, the step's notes beside it; stacked on phones. */
+:root {
+  --paper: #f3f4f1;
+  --sheet: #fbfbf8;
+  --ink: #1d2422;
+  --ink-soft: #55605c;
+  --line: #c9cec9;
+  --wall: #2a312f;
+  --zone: rgba(52, 104, 156, 0.10);
+  --zone-edge: rgba(52, 104, 156, 0.45);
+  --accent: #2f6b5a;          /* moved / changed */
+  --accent-fill: rgba(47, 107, 90, 0.16);
+  --added: #2f6b5a;
+  --warn: #b26a12;            /* checks */
+  --warn-fill: rgba(178, 106, 18, 0.14);
+  --ok: #2f7d43;
+  --bad: #b23a2a;
+  --obj: #e7e9e4;
+  --obj-edge: #7c8682;
+  --warm: #e9d3bd;            /* restyled finish */
+  --font-ui: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #151918; --sheet: #1c2120; --ink: #e6ebe8; --ink-soft: #9aa6a1; --line: #39413f;
+    --wall: #d9dfdc; --zone: rgba(110, 160, 210, 0.14); --zone-edge: rgba(130, 175, 220, 0.55);
+    --accent: #6fbfa4; --accent-fill: rgba(111, 191, 164, 0.18); --added: #6fbfa4;
+    --warn: #e2a24a; --warn-fill: rgba(226, 162, 74, 0.16); --ok: #6cc286; --bad: #ef7a68;
+    --obj: #2a312f; --obj-edge: #8b9792; --warm: #6b5442; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #151918; --sheet: #1c2120; --ink: #e6ebe8; --ink-soft: #9aa6a1; --line: #39413f;
+  --wall: #d9dfdc; --zone: rgba(110, 160, 210, 0.14); --zone-edge: rgba(130, 175, 220, 0.55);
+  --accent: #6fbfa4; --accent-fill: rgba(111, 191, 164, 0.18); --added: #6fbfa4;
+  --warn: #e2a24a; --warn-fill: rgba(226, 162, 74, 0.16); --ok: #6cc286; --bad: #ef7a68;
+  --obj: #2a312f; --obj-edge: #8b9792; --warm: #6b5442; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--paper); color: var(--ink); font-family: var(--font-ui); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 40px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 10px 20px; }
+h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 0; text-wrap: balance; }
+.sub { color: var(--ink-soft); font-size: 13px; margin: 2px 0 0; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tab { font: 600 13px var(--font-ui); padding: 7px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--sheet); color: var(--ink); cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--sheet); border-color: var(--ink); }
+.tab:focus-visible, .step:focus-visible, .nav button:focus-visible, .toggle input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.story { color: var(--ink-soft); max-width: 70ch; margin: 0; }
+.board { display: grid; grid-template-columns: 220px minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+.steps { display: grid; gap: 4px; }
+.step { display: grid; grid-template-columns: 40px 1fr; gap: 8px; align-items: baseline; text-align: left; font: 500 13px var(--font-ui); color: var(--ink); background: transparent; border: 0; border-left: 2px solid var(--line); padding: 7px 8px; cursor: pointer; }
+.step .id { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
+.step[aria-current="step"] { border-left-color: var(--accent); background: var(--sheet); }
+.step[aria-current="step"] .id { color: var(--accent); }
+.plan { background: var(--sheet); border: 1px solid var(--line); border-radius: 6px; padding: 10px; min-width: 0; }
+.plan svg { display: block; width: 100%; height: auto; max-height: 78vh; }
+.notes { display: grid; gap: 14px; min-width: 0; }
+.notes h2 { font-size: 18px; margin: 0; line-height: 1.25; text-wrap: balance; }
+.notes .kicker { font: 500 12px var(--font-mono); color: var(--ink-soft); letter-spacing: 0.04em; text-transform: uppercase; }
+.notes p { margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--line); }
+.chip.warn { border-color: var(--warn); color: var(--warn); background: var(--warn-fill); }
+.chip.ok { border-color: var(--ok); color: var(--ok); }
+.chip.change { border-color: var(--accent); color: var(--accent); background: var(--accent-fill); }
+.meta { font: 12px var(--font-mono); color: var(--ink-soft); }
+.nav { display: flex; gap: 8px; }
+.nav button { font: 600 13px var(--font-ui); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--sheet); color: var(--ink); cursor: pointer; }
+.nav button:disabled { opacity: 0.4; cursor: default; }
+.toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft); }
+.legend { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px 14px; font-size: 12px; color: var(--ink-soft); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 18px; height: 12px; border: 1.5px solid var(--obj-edge); background: var(--obj); display: inline-block; border-radius: 2px; }
+.sw.moved { border-color: var(--accent); background: var(--accent-fill); }
+.sw.ghost { border: 1.5px dashed var(--obj-edge); background: transparent; }
+.sw.zone { border: 1px dashed var(--zone-edge); background: var(--zone); }
+.sw.warm { background: var(--warm); }
+.sw.check { border-color: var(--warn); background: var(--warn-fill); }
+/* SVG */
+.s-wall { fill: var(--wall); }
+.s-floor { fill: var(--sheet); }
+.s-grid { stroke: var(--line); stroke-width: 0.4; }
+.s-zone { fill: var(--zone); stroke: var(--zone-edge); stroke-width: 0.8; stroke-dasharray: 3 2; }
+.s-zone-t { fill: var(--zone-edge); font: 7px var(--font-mono); }
+.s-obj { fill: var(--obj); stroke: var(--obj-edge); stroke-width: 1.2; }
+.s-obj.warm { fill: var(--warm); }
+.s-obj.changed { stroke: var(--accent); stroke-width: 2; fill: var(--accent-fill); }
+.s-obj.changed.warm { fill: var(--warm); }
+.s-ghost { fill: none; stroke: var(--obj-edge); stroke-width: 1; stroke-dasharray: 4 3; opacity: 0.8; }
+.s-try { fill: var(--warn-fill); stroke: var(--warn); stroke-width: 1.2; stroke-dasharray: 4 3; }
+.s-label { fill: var(--ink); font: 600 8.5px var(--font-ui); }
+.s-label.small { font-size: 7px; }
+.s-ghost-t { fill: var(--ink-soft); font: italic 7px var(--font-ui); }
+.s-arrow { stroke: var(--accent); stroke-width: 1.3; fill: none; }
+.s-arrowhead { fill: var(--accent); }
+.s-pillow { fill: var(--ink-soft); opacity: 0.35; }
+.s-face { fill: var(--ink-soft); }
+.s-dim { fill: var(--ink-soft); font: 8px var(--font-mono); }
+.s-dimline { stroke: var(--ink-soft); stroke-width: 0.6; }
+.s-win { fill: var(--sheet); stroke: var(--wall); stroke-width: 0.8; }
+.s-sill { fill: var(--line); }
+.s-door { fill: none; stroke: var(--wall); stroke-width: 0.8; }
+.s-doorleaf { stroke: var(--wall); stroke-width: 2; }
+.s-plug { fill: var(--sheet); stroke: var(--wall); stroke-width: 1.2; }
+.s-plug-t { fill: var(--ink); font: 600 7px var(--font-mono); }
+.s-wallnote { fill: var(--ink-soft); font: 7px var(--font-mono); }
+.s-line-ok { stroke: var(--ok); stroke-width: 1.4; }
+.s-line-bad { stroke: var(--bad); stroke-width: 1.4; stroke-dasharray: 2 2; }
+.s-sight { stroke: var(--warn); stroke-width: 1.3; stroke-dasharray: 1.5 2.5; }
+.s-sight-ok { stroke: var(--ink-soft); stroke-width: 1; stroke-dasharray: 1.5 2.5; }
+.s-flag { fill: var(--warn); font: 600 7.5px var(--font-ui); }
+.s-badge { fill: var(--accent); }
+.s-badge-t { fill: var(--sheet); font: 700 8px var(--font-ui); }
+.s-print { stroke: var(--accent); stroke-width: 4; }
+.s-curtain { stroke: var(--accent); stroke-width: 3; stroke-dasharray: 3 2; }
+@media (max-width: 980px) {
+  .board { grid-template-columns: 1fr; }
+  .steps { grid-auto-flow: column; grid-auto-columns: minmax(120px, max-content); overflow-x: auto; padding-bottom: 4px; }
+  .step { border-left: 0; border-bottom: 2px solid var(--line); }
+  .step[aria-current="step"] { border-bottom-color: var(--accent); }
+}
+@media (prefers-reduced-motion: no-preference) { .plan svg .s-obj { transition: fill 0.2s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Kith scenario plans</h1>
+      <p class="sub">Aarav's room, 3.40 × 3.40 m. North at the top. One plan per step of each scenario.</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Scenario" id="tabs"></div>
+  </header>
+  <p class="story" id="story"></p>
+  <div class="board">
+    <nav class="steps" id="steps" aria-label="Steps"></nav>
+    <div class="plan"><svg id="svg" viewBox="-46 -50 434 446" role="img" aria-labelledby="plan-title"><title id="plan-title">Floor plan</title></svg></div>
+    <section class="notes" aria-live="polite">
+      <div>
+        <div class="kicker" id="kicker"></div>
+        <h2 id="title"></h2>
+      </div>
+      <p id="text"></p>
+      <div class="chips" id="chips"></div>
+      <div class="meta" id="screens"></div>
+      <div class="nav">
+        <button type="button" id="prev">← Previous</button>
+        <button type="button" id="next">Next →</button>
+      </div>
+      <label class="toggle"><input type="checkbox" id="zones" checked> Show clear zones (door swing, wardrobe front, windows, AC airflow)</label>
+      <div class="legend">
+        <span><i class="sw"></i>Furniture</span>
+        <span><i class="sw moved"></i>Changed in this step</span>
+        <span><i class="sw ghost"></i>Where it was</span>
+        <span><i class="sw check"></i>Tried, raised a check</span>
+        <span><i class="sw zone"></i>Zone kept clear</span>
+        <span><i class="sw warm"></i>Restyled finish</span>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+// ---------- Room (cm, origin at the north-west inside corner; x east, y south) ----------
+const ROOM = 340, WALL = 14;
+const PLUG_A = [230, 0], PLUG_B = [170, 340];
+const DOOR = { x1: 126, x2: 214 };            // 0.88 m, hinge on the east jamb, opens inward
+const WIN1 = { x1: 20, x2: 125 }, WIN2 = { x1: 220, x2: 325 };
+const LABELS = { desk: 'Desk', chair: 'Chair', cabinet: 'Side cabinet', dressing: 'Dressing table', stool: 'Stool', bed: 'Bed',
+  boxes: 'Boxes', hamper: 'Hamper', fan: 'Fan', mat: 'Yoga mat', lounge: 'Lounge chair', lamp: 'Lamp', merged: 'Storage unit' };
+const SHORT = { stool: 'S', lamp: 'L', hamper: 'H', fan: 'F', chair: 'C' };
+
+// Start plan S0 (the room as recorded)
+const S0 = {
+  desk: { r: [280, 20, 60, 100] }, chair: { r: [240, 40, 40, 60] },
+  cabinet: { r: [300, 140, 40, 40] }, dressing: { r: [300, 180, 40, 80] }, stool: { r: [260, 200, 20, 40] },
+  bed: { r: [0, 140, 160, 200], pillow: 'S' }, boxes: { r: [220, 280, 60, 40] }, hamper: { r: [300, 280, 40, 40] },
+  fan: { r: [120, 300, 40, 40] }
+};
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const without = (o, ...ks) => { const c = clone(o); ks.forEach((k) => delete c[k]); return c; };
+const withp = (o, add) => Object.assign(clone(o), clone(add));
+
+// Scenario A
+const A2 = without(S0, 'boxes');
+const A3 = withp(A2, { desk: { r: [200, 260, 100, 60] }, chair: { r: [220, 220, 60, 40] }, fan: { r: [300, 20, 40, 40] }, stool: { r: [282, 196, 28, 28] } });
+const A5 = withp(without(A3, 'cabinet'), { mat: { r: [160, 80, 180, 100], flat: true } });
+const A6 = withp(without(A5, 'fan'), { lounge: { r: [260, 0, 80, 80], face: 'W' }, lamp: { r: [240, 2, 18, 18], round: true } });
+const WARM = ['desk', 'chair', 'bed', 'lounge', 'lamp'];
+const A7 = clone(A6); WARM.forEach((k) => { A7[k].warm = true; });
+
+// Scenario B
+const B2 = { bed: { r: [0, 100, 160, 200], pillow: 'N' } };
+const B3a = withp(B2, { desk: { r: [200, 260, 100, 60] }, chair: { r: [220, 220, 60, 40] } });
+const B3b = withp(B2, { desk: { r: [280, 20, 60, 100] }, chair: { r: [240, 40, 40, 60] } });
+const B4 = withp(B3b, { lamp: { r: [240, 2, 18, 18], round: true }, dressing: { r: [300, 200, 40, 80] }, stool: { r: [280, 220, 20, 40] }, hamper: { r: [300, 280, 40, 40] } });
+
+// Scenario C
+const C2 = withp(without(A7, 'mat'), { lounge: { r: [260, 0, 80, 80], face: 'S', warm: true } });
+
+const SCENARIOS = [
+  { id: 'a', tab: 'A · Aarav', name: 'See it before Saturday',
+    story: 'Aarav, 27, moved back to his hometown for a remote job and lives in this compact room. His brother can help him move furniture on Saturday. On Thursday night he uses Kith to see how the room could look and feel before anyone lifts the solid-wood desk.',
+    steps: [
+      { id: 'A0', title: 'The room as it is', plan: S0, text: 'The desk and chair are jammed in the corner by the door. Boxes sit in front of window 2. The pedestal fan stands in front of the plug between the windows.', chips: [], screens: 'Start plan S0' },
+      { id: 'A1', title: "Here's what we found", plan: S0, merged: true, text: 'The scan reads the side cabinet and the dressing table as one storage unit. Aarav knows it is two pieces, taps Not right? and splits it.', chips: [['change', 'Merged detection, split']], screens: 'RE-01 · RE-02' },
+      { id: 'A2', title: 'Clear the clutter', plan: A2, text: 'He ignores the Clear the room pill: he wants to work with what he has. He removes the boxes; they go to Assets → Your room. Preview shows a roomier floor.', chips: [['change', 'Boxes removed']], screens: 'ED-01 · ED-02 · ED-08' },
+      { id: 'A3', title: 'The desk by the window', plan: A3, lines: [['desk', 'B', 'ok']], fanHid: true, text: 'He drags the desk to window 2, twisting it to run along the wall; the chair follows. The plug line goes red and a card says the plug between the windows is behind the fan. He moves the fan to the corner by the door; the line jumps to plug B and turns green. The stool tucks under the dressing table.', chips: [['warn', 'Card: plug hidden by the fan (cleared)'], ['warn', 'Marker: Gaming, light behind the screen'], ['change', 'Desk, chair, fan, stool moved']], screens: 'ED-03 · AI-02' },
+      { id: 'A4', title: 'How does it feel?', plan: A3, view: true, text: 'In Preview he turns the view to sit at the desk: daylight on the desk, the window ahead. He asks what people will see behind him on calls: the wardrobe and the end of his bed.', chips: [['ok', 'Look and feel']], screens: 'ED-08 · AI-01' },
+      { id: 'A5', title: 'Room for yoga', plan: A5, tried: { r: [140, 30, 180, 90], label: 'first drop: in the door’s way' }, text: 'He adds his yoga mat from a photo and corrects its length to 180 cm. His first drop slides off the side cabinet into the door’s swing: a stack of two cards. Show options offers three choices; he lets the side cabinet go, and the mat fits across the middle.', chips: [['warn', 'Stack 1 of 2: door swing, Open floor'], ['change', 'Mat added, side cabinet removed']], screens: 'AS-04 · EO-01 · AI-02 · AI-04' },
+      { id: 'A6', title: 'A corner to sit back in', plan: A6, lines: [['lamp', 'A', 'ok']], text: 'He adds a lounge chair from a product link. The fan holds the corner, so he asks the AI to remove it and applies the proposal. The chair settles in the corner, and the AI adds a floor lamp on plug A for soft light.', chips: [['warn', 'Stack: exercise space, no soft light (cleared)'], ['change', 'Fan removed, lounge chair and lamp added']], screens: 'AS-05 · AI-03 · AI-04' },
+      { id: 'A7', title: 'Make it his', plan: A7, text: 'He asks the AI to restyle the room like his references, unticks the bedding (his grandmother’s bedspread stays) and applies the rest. The desk comes out too dark, so he restores its original teak from its finish history.', chips: [['change', 'Restyled: bed frame, chair, lounge chair, lamp, curtains'], ['ok', 'Desk back to teak']], screens: 'AI-03 · EO-01 · ED-08' },
+      { id: 'A8', title: 'The plan for Saturday', plan: A7, diffFrom: 'A0', order: { boxes: 1, fan: 2, cabinet: 2, desk: 3, chair: 3, stool: 3, mat: 4, lounge: 5, lamp: 5 }, text: 'He keeps the one Gaming marker, confirms, and opens What to move. The numbers show the order: clear the boxes, take out the fan and side cabinet, move the desk and chair under window 2, unroll the mat, bring in the lounge chair and lamp.', chips: [['ok', 'Nothing open'], ['change', 'What to move, in order']], screens: 'RC-01 · ED-06 · ED-07 · FN-01' }
+    ] },
+  { id: 'b', tab: 'B · Mira', name: 'Two places in one room',
+    story: 'Mira, 31, is a freelance illustrator who works and sleeps in this room and never switches off. She clears the room to see whether it can feel like two places: a bright corner for work and a calm side for sleep.',
+    steps: [
+      { id: 'B0', title: 'Before you started', plan: S0, ac: true, text: 'She skips references and gets a default preset. From her words "I work late and sleep lightly", the recap adds a rule she can remove: keep work out of sight from the bed. Room Check shows one item from before she started: the AC blows straight at the pillow.', chips: [['warn', 'Before you started: AC at the pillow']], screens: 'PR-02 · PR-05 · RC-01' },
+      { id: 'B1', title: 'Start from nothing', plan: {}, diffFrom: 'B0', text: 'She taps the Clear the room pill. Every movable object goes to Assets → Your room, leaving the fixed elements and an empty floor.', chips: [['change', 'Room cleared']], screens: 'ED-01' },
+      { id: 'B2', title: 'The sleep side first', plan: B2, ac: true, print: true, text: 'She drags the bed onto the west wall and gets a Restful sleep card. Show options suggests turning it, so she rotates it 180°: the pillow is now at the north end, well clear of the AC. She hangs a framed print on the wall above the bed.', chips: [['warn', 'Card: AC at the pillow (cleared by turning)'], ['change', 'Bed placed and turned, print hung']], screens: 'ED-03 · AI-02 · ED-05' },
+      { id: 'B3a', title: 'Tried: the desk at the window', plan: B3a, print: true, sight: [[70, 110], [250, 240], 'warn'], text: 'For daylight she tries the desk at window 2. Card: from your pillow you’d see your desk, the rule from her own words. A screen between them would squeeze the way to the bed, so she undoes that option.', chips: [['warn', 'Card: work in view from the bed'], ['warn', 'Tried a screen: tight squeeze (undone)']], screens: 'AI-02 · AI-04 · AI-03' },
+      { id: 'B3b', title: 'Chosen: the desk by the door', plan: B3b, print: true, lines: [['desk', 'B', 'bad']], aLabel: 'switch?', text: 'She picks the corner by the door: behind her pillow line, out of sight. Two cards: the nearest free plug is far (the thing by the door is labelled a light switch), and the desk is far from daylight. She keeps the daylight trade-off. Sleep matters more.', chips: [['warn', 'Stack: plug far, daylight (kept)'], ['change', 'Desk and chair placed']], screens: 'AI-02' },
+      { id: 'B4', title: 'Two places, done', plan: B4, print: true, lines: [['desk', 'A', 'ok'], ['lamp', 'A', 'ok']], text: 'The AI refuses to move a socket and points her to Room edit, where she relabels the thing by the door as a socket. Both plug lines turn green. She asks how wide the desk is (about 105 cm), brings back the dressing table, stool and hamper, clears her checks and confirms.', chips: [['ok', 'Label fixed: socket'], ['change', 'Lamp, dressing table, stool, hamper']], screens: 'AI-01 · RE-01 · RE-02 · RC-02 · FN-01' }
+    ] },
+  { id: 'c', tab: 'C · Weekend', name: 'A weekend version',
+    story: 'A month after A, Aarav has joined a gym and the mat mostly stays rolled up. A friend comes over at weekends to game. He makes a weekend version of the room without losing the weekday one.',
+    steps: [
+      { id: 'C0', title: '"My room", as confirmed', plan: A7, text: 'The project opens clean on the layout he confirmed in scenario A.', chips: [], screens: 'HM-01 · ED-01' },
+      { id: 'C1', title: 'Duplicate as "Weekend"', plan: A7, text: 'From the layout name he duplicates "My room" and names the copy "Weekend".', chips: [['change', 'New layout']], screens: 'LY-01' },
+      { id: 'C2', title: 'Make it a weekend room', plan: C2, curtains: true, text: 'He removes the mat, asks the AI to make the curtains on window 2 block the afternoon light, and twists the lounge chair to face the desk so his friend can watch.', chips: [['change', 'Mat removed, curtains blackout, chair turned']], screens: 'ED-02 · AI-03 · ED-03' },
+      { id: 'C3', title: 'From weekday to weekend', plan: C2, curtains: true, diffFrom: 'C0', order: { mat: 1, lounge: 2 }, text: 'Switching layouts asks him to confirm first. What to move between the two versions is short: roll up the mat, turn the lounge chair toward the desk, draw the blackout curtains.', chips: [['change', 'Three moves between layouts']], screens: 'ED-09 · FN-01' }
+    ] }
+];
+
+// ---------- Drawing ----------
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('svg');
+const el = (name, attrs = {}, text) => { const n = document.createElementNS(NS, name); for (const k in attrs) n.setAttribute(k, attrs[k]); if (text != null) n.textContent = text; return n; };
+const center = (r) => [r[0] + r[2] / 2, r[1] + r[3] / 2];
+const same = (a, b) => a && b && a.r.join() === b.r.join() && (a.face || '') === (b.face || '') && (a.pillow || '') === (b.pillow || '');
+
+function drawRoom(g, step, showZones) {
+  g.appendChild(el('rect', { x: -WALL, y: -WALL, width: ROOM + 2 * WALL, height: ROOM + 2 * WALL, class: 's-wall' }));
+  g.appendChild(el('rect', { x: 0, y: 0, width: ROOM, height: ROOM, class: 's-floor' }));
+  for (let i = 20; i < ROOM; i += 20) {
+    g.appendChild(el('line', { x1: i, y1: 0, x2: i, y2: ROOM, class: 's-grid' }));
+    g.appendChild(el('line', { x1: 0, y1: i, x2: ROOM, y2: i, class: 's-grid' }));
+  }
+  if (showZones) {
+    // door swing, wardrobe front, window strips, AC outflow
+    g.appendChild(el('path', { d: `M ${DOOR.x2} 0 L ${DOOR.x1} 0 A 88 88 0 0 0 ${DOOR.x2} 88 Z`, class: 's-zone' }));
+    g.appendChild(el('rect', { x: 0, y: 40, width: 120, height: 60, class: 's-zone' }));
+    g.appendChild(el('text', { x: 4, y: 96, class: 's-zone-t' }, 'wardrobe front'));
+    g.appendChild(el('text', { x: DOOR.x1 + 4, y: 84, class: 's-zone-t' }, 'door swing'));
+    [WIN1, WIN2].forEach((w) => g.appendChild(el('rect', { x: w.x1, y: ROOM - 40, width: w.x2 - w.x1, height: 40, class: 's-zone' })));
+    if (step.ac) {
+      g.appendChild(el('path', { d: `M 20 ${ROOM} A 120 120 0 0 1 140 ${ROOM - 120} L 140 ${ROOM} Z`, class: 's-zone' }));
+      g.appendChild(el('rect', { x: 0, y: ROOM - 120, width: 140, height: 120, class: 's-zone' }));
+      g.appendChild(el('text', { x: 4, y: ROOM - 108, class: 's-zone-t' }, 'AC airflow'));
+    }
+  }
+  // wardrobe (built in) along the north wall
+  g.appendChild(el('rect', { x: 0, y: 0, width: 120, height: 40, class: 's-obj' }));
+  g.appendChild(el('line', { x1: 0, y1: 20, x2: 120, y2: 20, stroke: 'var(--obj-edge)', 'stroke-width': 0.6 }));
+  g.appendChild(el('text', { x: 60, y: 24, 'text-anchor': 'middle', class: 's-label small' }, 'Wardrobe (built in)'));
+  // door: opening in the wall, leaf and swing arc
+  g.appendChild(el('rect', { x: DOOR.x1, y: -WALL, width: DOOR.x2 - DOOR.x1, height: WALL, class: 's-floor' }));
+  g.appendChild(el('line', { x1: DOOR.x2, y1: 0, x2: DOOR.x2, y2: 88, class: 's-doorleaf' }));
+  g.appendChild(el('path', { d: `M ${DOOR.x1} 0 A 88 88 0 0 0 ${DOOR.x2} 88`, class: 's-door' }));
+  g.appendChild(el('text', { x: (DOOR.x1 + DOOR.x2) / 2, y: -20, 'text-anchor': 'middle', class: 's-wallnote' }, 'door'));
+  // windows with sills on the south wall
+  [[WIN1, 'window 1 · AC above'], [WIN2, 'window 2']].forEach(([w, t]) => {
+    g.appendChild(el('rect', { x: w.x1, y: ROOM, width: w.x2 - w.x1, height: WALL, class: 's-win' }));
+    g.appendChild(el('line', { x1: w.x1, y1: ROOM + WALL / 2, x2: w.x2, y2: ROOM + WALL / 2, stroke: 'var(--wall)', 'stroke-width': 0.8 }));
+    g.appendChild(el('rect', { x: w.x1, y: ROOM - 22, width: w.x2 - w.x1, height: 22, class: 's-sill', opacity: 0.55 }));
+    g.appendChild(el('text', { x: (w.x1 + w.x2) / 2, y: ROOM + WALL + 12, 'text-anchor': 'middle', class: 's-wallnote' }, t));
+  });
+  if (step.curtains) g.appendChild(el('line', { x1: WIN2.x1, y1: ROOM - 26, x2: WIN2.x2, y2: ROOM - 26, class: 's-curtain' }));
+  // plugs
+  [[PLUG_A, 'a', step.aLabel ? 'plug A · ' + step.aLabel : 'plug A', -1], [PLUG_B, 'b', 'plug B', 1]].forEach(([p, k, t, dir]) => {
+    g.appendChild(el('circle', { cx: p[0], cy: p[1], r: 5, class: 's-plug' }));
+    g.appendChild(el('text', { x: p[0], y: p[1] + 2.5, 'text-anchor': 'middle', class: 's-plug-t' }, k));
+    g.appendChild(el('text', { x: p[0] + (k === 'a' ? 10 : 0), y: dir < 0 ? -20 : ROOM + WALL + 24, 'text-anchor': k === 'a' ? 'start' : 'middle', class: 's-wallnote' }, t));
+  });
+  // dimensions, north arrow, scale bar
+  g.appendChild(el('line', { x1: 0, y1: -36, x2: ROOM, y2: -36, class: 's-dimline' }));
+  g.appendChild(el('text', { x: ROOM / 2, y: -40, 'text-anchor': 'middle', class: 's-dim' }, '3.40 m'));
+  g.appendChild(el('line', { x1: -36, y1: 0, x2: -36, y2: ROOM, class: 's-dimline' }));
+  g.appendChild(el('text', { x: -40, y: ROOM / 2, 'text-anchor': 'middle', transform: `rotate(-90 -40 ${ROOM / 2})`, class: 's-dim' }, '3.40 m'));
+  g.appendChild(el('path', { d: `M ${ROOM + 26} -28 l -5 12 l 5 -3 l 5 3 z`, class: 's-face' }));
+  g.appendChild(el('text', { x: ROOM + 26, y: -32, 'text-anchor': 'middle', class: 's-dim' }, 'N'));
+  g.appendChild(el('rect', { x: 0, y: ROOM + 34, width: 100, height: 3, fill: 'var(--ink-soft)' }));
+  g.appendChild(el('text', { x: 104, y: ROOM + 38, class: 's-dim' }, '1 m'));
+  g.appendChild(el('text', { x: -WALL, y: ROOM / 2 - 4, 'text-anchor': 'end', class: 's-wallnote', transform: `rotate(-90 ${-WALL - 4} ${ROOM / 2})` }, ''));
+}
+
+function drawObject(g, key, o, cls) {
+  const [x, y, w, h] = o.r;
+  if (o.round) {
+    g.appendChild(el('circle', { cx: x + w / 2, cy: y + h / 2, r: w / 2, class: cls }));
+  } else {
+    const rx = o.flat ? 6 : 2;
+    g.appendChild(el('rect', { x, y, width: w, height: h, rx, class: cls }));
+  }
+  if (o.pillow) {
+    const py = o.pillow === 'N' ? y + 4 : y + h - 26;
+    g.appendChild(el('rect', { x: x + 12, y: py, width: w - 24, height: 22, rx: 6, class: 's-pillow' }));
+  }
+  if (o.face) {
+    const [cx, cy] = center(o.r);
+    const t = { N: [cx, y + 6, -1, 0], S: [cx, y + h - 6, 1, 0], W: [x + 6, cy, 0, -1], E: [x + w - 6, cy, 0, 1] }[o.face];
+    const [px, py, sy, sx] = t;
+    const d = sx === 0 ? `M ${px - 6} ${py - 4 * sy} L ${px + 6} ${py - 4 * sy} L ${px} ${py + 2 * sy} Z` : `M ${px - 4 * sx} ${py - 6} L ${px - 4 * sx} ${py + 6} L ${px + 2 * sx} ${py} Z`;
+    g.appendChild(el('path', { d, class: 's-face' }));
+  }
+  const big = w >= 40 && h >= 30;
+  const label = big ? LABELS[key] : (SHORT[key] || LABELS[key]);
+  const [cx, cy] = center(o.r);
+  const lbl = el('text', { x: cx, y: cy + 3, 'text-anchor': 'middle', class: 's-label' + (big && (LABELS[key].length * 4.6 < w) ? '' : ' small') }, label);
+  if (big && LABELS[key].length * 3.8 > w && h > w) lbl.setAttribute('transform', `rotate(-90 ${cx} ${cy})`);
+  g.appendChild(lbl);
+}
+
+function arrow(g, from, to) {
+  const [x1, y1] = from, [x2, y2] = to;
+  const len = Math.hypot(x2 - x1, y2 - y1);
+  if (len < 8) return;
+  const ux = (x2 - x1) / len, uy = (y2 - y1) / len;
+  const ex = x2 - ux * 6, ey = y2 - uy * 6;
+  g.appendChild(el('line', { x1, y1, x2: ex, y2: ey, class: 's-arrow' }));
+  g.appendChild(el('path', { d: `M ${x2} ${y2} L ${ex - uy * 4} ${ey + ux * 4} L ${ex + uy * 4} ${ey - ux * 4} Z`, class: 's-arrowhead' }));
+}
+
+function render(scn, idx, showZones) {
+  const step = scn.steps[idx];
+  while (svg.lastChild && svg.lastChild.nodeName !== 'title') svg.removeChild(svg.lastChild);
+  document.getElementById('plan-title').textContent = `${step.id}: ${step.title}`;
+  const g = el('g');
+  svg.appendChild(g);
+  drawRoom(g, step, showZones);
+  const prev = step.diffFrom ? scn.steps.find((s) => s.id === step.diffFrom).plan : (idx > 0 ? scn.steps[idx - 1].plan : step.plan);
+  const cur = step.plan;
+  // ghosts for removed or moved objects
+  for (const k in prev) {
+    if (!cur[k] || !same(prev[k], cur[k])) {
+      const [x, y, w, h] = prev[k].r;
+      g.appendChild(el(prev[k].round ? 'circle' : 'rect', prev[k].round ? { cx: x + w / 2, cy: y + h / 2, r: w / 2, class: 's-ghost' } : { x, y, width: w, height: h, rx: 2, class: 's-ghost' }));
+      if (!cur[k]) g.appendChild(el('text', { x: x + w / 2, y: y + h / 2 + 3, 'text-anchor': 'middle', class: 's-ghost-t' }, (SHORT[k] && w < 40) ? SHORT[k] : LABELS[k] + ' · out'));
+    }
+  }
+  if (step.tried) {
+    const [x, y, w, h] = step.tried.r;
+    g.appendChild(el('rect', { x, y, width: w, height: h, rx: 6, class: 's-try' }));
+    g.appendChild(el('text', { x: x + 4, y: y + 10, class: 's-flag' }, step.tried.label));
+  }
+  // objects: flat things first
+  const keys = Object.keys(cur).sort((a, b) => (cur[b].flat ? 1 : 0) - (cur[a].flat ? 1 : 0));
+  for (const k of keys) {
+    const changed = !prev[k] || !same(prev[k], cur[k]) || (step.id === 'A7' && cur[k].warm);
+    drawObject(g, k, cur[k], 's-obj' + (cur[k].warm ? ' warm' : '') + (changed && idx > 0 ? ' changed' : ''));
+    if (prev[k] && !same(prev[k], cur[k]) && prev[k].r.join() !== cur[k].r.join()) arrow(g, center(prev[k].r), center(cur[k].r));
+  }
+  if (step.merged) {
+    g.appendChild(el('rect', { x: 296, y: 136, width: 48, height: 128, rx: 4, class: 's-try' }));
+    g.appendChild(el('text', { x: 292, y: 132, 'text-anchor': 'end', class: 's-flag' }, 'read as one "storage unit"'));
+  }
+  if (step.fanHid) g.appendChild(el('text', { x: 130, y: 296, class: 's-ghost-t' }, 'the fan used to hide plug B'));
+  (step.lines || []).forEach(([k, p, state]) => {
+    const o = cur[k]; if (!o) return;
+    const [cx, cy] = center(o.r);
+    const to = p === 'A' ? PLUG_A : PLUG_B;
+    g.appendChild(el('line', { x1: cx, y1: cy, x2: to[0], y2: to[1], class: state === 'ok' ? 's-line-ok' : 's-line-bad' }));
+  });
+  if (step.sight) {
+    const [a, b, s] = step.sight;
+    g.appendChild(el('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], class: s === 'warn' ? 's-sight' : 's-sight-ok' }));
+    g.appendChild(el('text', { x: (a[0] + b[0]) / 2 + 6, y: (a[1] + b[1]) / 2 - 4, class: 's-flag' }, 'in view from the pillow'));
+  }
+  if (step.view && cur.chair) {
+    const [cx, cy] = center(cur.chair.r);
+    g.appendChild(el('path', { d: `M ${cx} ${cy} L 20 60 L 150 40 Z`, fill: 'var(--zone)', stroke: 'var(--zone-edge)', 'stroke-width': 0.8 }));
+    g.appendChild(el('text', { x: 92, y: 80, 'text-anchor': 'middle', class: 's-zone-t' }, 'the camera’s view on calls'));
+  }
+  if (step.print) {
+    g.appendChild(el('line', { x1: -3, y1: 160, x2: -3, y2: 205, class: 's-print' }));
+    g.appendChild(el('text', { x: 6, y: 216, class: 's-ghost-t' }, 'framed print'));
+  }
+  if (step.order) {
+    const placed = new Set();
+    for (const k in step.order) {
+      const src = cur[k] || prev[k];
+      if (!src) continue;
+      const n = step.order[k];
+      const tag = n + ':' + Math.round(center(src.r)[0] / 60);
+      if (placed.has(tag)) continue; placed.add(tag);
+      const [x, y] = [src.r[0] + src.r[2] - 2, src.r[1] + 2];
+      g.appendChild(el('circle', { cx: x, cy: y, r: 7, class: 's-badge' }));
+      g.appendChild(el('text', { x, y: y + 3, 'text-anchor': 'middle', class: 's-badge-t' }, String(n)));
+    }
+  }
+}
+
+// ---------- UI ----------
+const tabsEl = document.getElementById('tabs'), stepsEl = document.getElementById('steps');
+const state = { s: 0, i: 0 };
+const zonesEl = document.getElementById('zones');
+try { const z = localStorage.getItem('kith-plans-zones'); if (z !== null) zonesEl.checked = z === '1'; } catch (e) {}
+
+function show() {
+  const scn = SCENARIOS[state.s], step = scn.steps[state.i];
+  [...tabsEl.children].forEach((b, i) => b.setAttribute('aria-selected', String(i === state.s)));
+  document.getElementById('story').textContent = scn.story;
+  stepsEl.innerHTML = '';
+  scn.steps.forEach((st, i) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'step';
+    if (i === state.i) b.setAttribute('aria-current', 'step');
+    b.innerHTML = `<span class="id"></span><span class="t"></span>`;
+    b.querySelector('.id').textContent = st.id; b.querySelector('.t').textContent = st.title;
+    b.addEventListener('click', () => { state.i = i; show(); });
+    stepsEl.appendChild(b);
+  });
+  document.getElementById('kicker').textContent = `${scn.tab} · ${scn.name} · step ${state.i + 1} of ${scn.steps.length}`;
+  document.getElementById('title').textContent = step.title;
+  document.getElementById('text').textContent = step.text;
+  const chips = document.getElementById('chips'); chips.innerHTML = '';
+  step.chips.forEach(([k, t]) => { const c = document.createElement('span'); c.className = 'chip ' + k; c.textContent = t; chips.appendChild(c); });
+  document.getElementById('screens').textContent = 'Screens: ' + step.screens;
+  document.getElementById('prev').disabled = state.i === 0;
+  document.getElementById('next').disabled = state.i === scn.steps.length - 1;
+  render(scn, state.i, zonesEl.checked);
+  if (location.hash !== '#' + scn.id) history.replaceState(null, '', '#' + scn.id);
+}
+SCENARIOS.forEach((scn, i) => {
+  const b = document.createElement('button');
+  b.type = 'button'; b.className = 'tab'; b.setAttribute('role', 'tab'); b.textContent = scn.tab;
+  b.addEventListener('click', () => { state.s = i; state.i = 0; show(); });
+  tabsEl.appendChild(b);
+});
+document.getElementById('prev').addEventListener('click', () => { if (state.i > 0) { state.i--; show(); } });
+document.getElementById('next').addEventListener('click', () => { if (state.i < SCENARIOS[state.s].steps.length - 1) { state.i++; show(); } });
+zonesEl.addEventListener('change', () => { try { localStorage.setItem('kith-plans-zones', zonesEl.checked ? '1' : '0'); } catch (e) {} show(); });
+document.addEventListener('keydown', (e) => {
+  if (e.target.closest('input')) return;
+  if (e.key === 'ArrowRight') document.getElementById('next').click();
+  if (e.key === 'ArrowLeft') document.getElementById('prev').click();
+});
+function fromHash() { const i = SCENARIOS.findIndex((s) => '#' + s.id === location.hash); if (i >= 0 && i !== state.s) { state.s = i; state.i = 0; } }
+window.addEventListener('hashchange', () => { fromHash(); show(); });
+fromHash();
+show();
+</script>

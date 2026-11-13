@@ -1,0 +1,298 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Glass rules are scoped under `html` to match the specificity of Tailwind utilities (important: "html"). */
+
+/* ==========================================================================
+   KITH THEME (shadcn-style semantic tokens). Colors are rgb triplets so Tailwind opacity
+   modifiers work (bg-primary/10). `.dark` flips a subtree: used for the dark
+   glass sheets and dialogs that float over the room.
+   ========================================================================== */
+
+:root {
+  /* Light theme */
+  --primary: 23 23 23;
+  --primary-foreground: 250 250 250;
+  --card: 255 255 255;
+  --card-foreground: 10 10 10;
+  --secondary: 245 245 245;
+  --secondary-foreground: 23 23 23;
+  --background: 255 255 255;
+  --popover: 255 255 255;
+  --popover-foreground: 10 10 10;
+  --muted: 245 245 245;
+  --muted-foreground: 115 115 115;
+  --destructive: 231 0 11;
+  --foreground: 10 10 10;
+  --border: 229 229 229;
+  --input: 229 229 229;
+  /* Focus ring: neutral-600 on white is 7.5:1 (WCAG 1.4.11 needs 3:1). Was 212 212 212, ~1.5:1. */
+  --ring: 82 82 82;
+  --accent: 247 247 247;
+  --accent-foreground: 52 52 52;
+
+  /* Layo accent (rgb): the one non-neutral UI colour. Scan progress, staged/edited boxes. */
+  --k-accent: 245 163 199;
+
+  /* Glass tint (rgb) for the glassmorphic surfaces */
+  --glass: 20 22 30;
+
+  /* Layout rhythm for everything that floats over a screen (402px phone reference) */
+  --k-edge: 26px;
+  --k-ctl: 54px;
+  --k-dock: 80px;
+  --k-gap: 16px;
+  --k-row: 30px;
+  --k-top: max(1.9rem, env(safe-area-inset-top));
+  --k-bottom: max(26px, env(safe-area-inset-bottom));
+
+  /* Motion: one easing for every entrance (.animate-in). Was referenced but never defined,
+     which invalidated the animation declaration and made every entrance snap in. */
+  --k-spring: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Nested radii: a child's radius = its parent's radius - the parent's padding, so corners stay concentric.
+     sheet > card > field. Change --r-sheet (or a --pad-*) and everything inside follows.
+     Pills are rounded-full and always nest cleanly. The 0.25rem floor keeps deep nesting from going square. */
+  --pad-sheet: 1.0667rem; /* 16px: padding inside a sheet, dialog, panel or stage. Optical: deep corners need room */
+  --pad-card: 0.8rem; /* 12px: padding inside a card */
+  --r-sheet: 2.4rem; /* 36px */
+  --r-card: max(calc(var(--r-sheet) - var(--pad-sheet)), 0.25rem); /* 20px */
+  --r-field: max(calc(var(--r-card) - var(--pad-card)), 0.25rem); /* 8px */
+
+  /* Label on the dark tinted primary buttons: a warm pink-white, not pure white, so it belongs to the rose glow.
+     13:1 on the flat button, 5:1 on the brightest glow stop. */
+  --on-glow: 255 234 240;
+
+  --k-orb:
+    radial-gradient(38% 34% at 46% 54%, #FFF2DF 0%, rgba(255, 242, 223, 0) 100%),
+    radial-gradient(50% 46% at 40% 58%, #FFD3BE 0%, rgba(255, 211, 190, 0) 100%),
+    radial-gradient(55% 50% at 64% 40%, #F6B9D6 0%, rgba(246, 185, 214, 0) 100%),
+    radial-gradient(70% 60% at 30% 22%, #BFD9FA 0%, rgba(191, 217, 250, 0) 100%),
+    radial-gradient(80% 70% at 70% 86%, #C4BEF4 0%, rgba(196, 190, 244, 0) 100%),
+    #E3E4FB;
+}
+
+/* Tighter corners, for comparing on /styleguide. Set with <html data-radius="tight">. */
+:root[data-radius="tight"] { --r-sheet: 1.9333rem; }
+
+/* Dark theme. Also applied to the dark glass panels over the room. */
+.dark {
+  --primary-foreground: 23 23 23;
+  --primary: 255 245 245;
+  --card: 23 23 23;
+  --secondary: 38 38 38;
+  --secondary-foreground: 250 250 250;
+  --background: 10 10 10;
+  --popover: 23 23 23;
+  --popover-foreground: 250 250 250;
+  --muted: 38 38 38;
+  --muted-foreground: 161 161 161;
+  --destructive: 255 100 103;
+  --foreground: 250 250 250;
+  --border: 46 46 46;
+  --input: 46 46 46;
+  --accent: 38 38 38;
+  --accent-foreground: 250 250 250;
+  --ring: 212 212 212;
+}
+
+/* 93.75% = 15px at the default browser size, and it follows the reader's own font-size setting
+   (the old fixed 15px ignored it). Root only: a percentage on body/#root too would compound. */
+html { font-size: 93.75%; }
+
+html, body, #root {
+  width: 100%; height: 100%; min-height: 100dvh; margin: 0; padding: 0; overflow: hidden;
+  background: rgb(var(--background)); color: rgb(var(--foreground));
+  font-family: Inter, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  letter-spacing: -0.011em;
+  -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale;
+  touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+  /* No pull-to-refresh or page rubber-band: the app owns every gesture (canvas, sheets) */
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+}
+#root { display: flex; }
+
+/* Text/Heading bases set `whitespace-pre-wrap`, which beat `truncate` whenever the text had
+   spaces: long names wrapped out of their cards instead of ending in an ellipsis. Truncate always wins. */
+html .truncate, html .web\:truncate { white-space: nowrap; }
+
+/* ----- Mobile-native baseline ----- */
+/* Controls: no 300ms delay, no long-press text selection or callout. Content text stays selectable. */
+button, [role="button"], [role="tab"] {
+  touch-action: manipulation;
+  -webkit-user-select: none; user-select: none;
+  -webkit-touch-callout: none;
+}
+/* iOS zooms into any field under 16px and never zooms back. Touch only, so desktop keeps the design size. */
+@media (pointer: coarse) {
+  /* [class] lifts specificity above Tailwind's `html .text-sm` (important: "html") */
+  html input[class], html textarea[class], html select[class], html input, html textarea { font-size: 16px; }
+}
+/* Scrollable areas inside sheets and dialogs never drag the page behind them */
+[role="dialog"] *, .k-panel * { overscroll-behavior: contain; }
+*, *::before, *::after { box-sizing: border-box; scrollbar-width: none; }
+*::-webkit-scrollbar { display: none; width: 0; height: 0; }
+:fullscreen, ::backdrop { background: rgb(var(--background)); overflow: hidden; }
+
+/* ----- Materials (referenced from component classNames) ----- */
+
+/* Glassmorphism: clear glass floats over the room; dark frosted glass holds panels. */
+html .k-glass {
+  color: #fff;
+  background: rgba(20, 22, 30, 0.24);
+  -webkit-backdrop-filter: blur(14px) saturate(170%) brightness(0.9);
+  backdrop-filter: blur(14px) saturate(170%) brightness(0.9);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 8px 24px -10px rgba(8, 10, 18, 0.45);
+}
+/* Dark frosted glass: sheets and dialogs */
+html .k-panel {
+  background: rgba(18, 20, 28, 0.64);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), 0 2px 6px rgb(23 24 40 / 0.04), 0 18px 44px -12px rgb(23 24 40 / 0.16);
+}
+html .k-panel-strong { background: rgba(18, 20, 28, 0.84); }
+html .k-scrim { background: rgba(8, 10, 16, 0.5); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+/* ----- Light glass (the proposed look) -----
+   Frosted white with dark text, after the reference. Contrast is guaranteed on ANY backdrop: the tint is
+   at least 58% white, so even over pure black the surface is mid-grey (#929292) and dark text stays above 4.5:1.
+   Tokens are remapped inside it so Text, ghost buttons and icons read correctly without a `dark` wrapper. */
+html .k-glass-lt, html .k-panel-lt {
+  /* Dark grey with a violet tint, never pure black */
+  --foreground: 30 26 38;
+  --muted-foreground: 46 41 58;
+  --primary: 42 37 50; --primary-foreground: 255 234 240;
+  --secondary: 255 255 255; --secondary-foreground: 30 26 38;
+  --accent: 255 255 255; --accent-foreground: 30 26 38;
+  --border: 150 142 170; --ring: 42 37 50;
+  color: rgb(30 26 38);
+}
+html .k-glass-lt {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.66), rgba(255, 255, 255, 0.58));
+  -webkit-backdrop-filter: blur(24px) saturate(170%);
+  backdrop-filter: blur(24px) saturate(170%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 14px 36px -14px rgba(40, 30, 70, 0.32);
+}
+html .k-panel-lt {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.68));
+  -webkit-backdrop-filter: blur(36px) saturate(170%);
+  backdrop-filter: blur(36px) saturate(170%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 30px 70px -24px rgba(40, 30, 70, 0.34);
+}
+/* ----- Dark glass (the editor) -----
+   Smoked violet-grey, blurred, with pink-white text. The backdrop is dimmed (brightness .6) under a 56% mid-tone tint, so over a pure white room the surface is #6C5F7A-ish,
+   so text stays above 4.5:1; over black it only gets darker. No white surfaces over the room. */
+html .k-glass-dk, html .k-panel-dk {
+  --foreground: 255 234 240;
+  --muted-foreground: 250 236 242;
+  --primary: 255 234 240; --primary-foreground: 38 30 46;
+  --secondary: 70 62 80; --secondary-foreground: 255 234 240;
+  --accent: 70 62 80; --accent-foreground: 255 234 240;
+  --border: 255 234 240; --ring: 255 234 240;
+  --k-rose: 143 58 85; /* the one accent: a muted rose, 6:1 behind the label */
+  color: rgb(255 234 240);
+  background: rgba(74, 64, 86, 0.56);
+  -webkit-backdrop-filter: blur(22px) saturate(160%) brightness(0.6);
+  backdrop-filter: blur(22px) saturate(160%) brightness(0.6);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 14px 32px -14px rgba(30, 24, 56, 0.45);
+}
+html .k-scrim-dk { background: rgba(20, 16, 28, 0.5); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+html .k-scrim-lt { background: rgba(236, 232, 248, 0.4); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); }
+
+/* ----- Primary button over the room: smoked glass -----
+   Flat dark grey with a violet cast, blurred behind, with a hairline edge. No gradient, no glow, no motion.
+   82% tint keeps the pink-white label above 4.5:1 over a pure white or pure black room. */
+html .k-btn-smoke {
+  color: rgb(var(--on-glow));
+  background: rgba(74, 64, 86, 0.56);
+  -webkit-backdrop-filter: blur(18px) saturate(160%) brightness(0.6);
+  backdrop-filter: blur(18px) saturate(160%) brightness(0.6);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 12px 28px -14px rgba(30, 24, 56, 0.4);
+}
+
+/* Quiet glass for secondary actions: frosted, blurred, dark label (see .k-glass-lt for the token remap). */
+html .k-btn-frost {
+  background: rgba(255, 255, 255, 0.58);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 10px 26px -12px rgba(40, 30, 70, 0.3);
+}
+/* Dock: the floating bottom bar on pages and in the editor. Dark smoked glass; the active item is a light pill.
+   86% tint keeps the pink-white icons above 3:1 and labels above 4.5:1 over any room or page behind it. */
+html .k-dock {
+  color: rgb(var(--on-glow));
+  background: rgba(74, 64, 86, 0.56);
+  -webkit-backdrop-filter: blur(20px) saturate(160%) brightness(0.6);
+  backdrop-filter: blur(20px) saturate(160%) brightness(0.6);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 24px 48px -20px rgba(30, 24, 56, 0.5);
+}
+
+/* ----- Preview-only overrides: fonts and diffused shadows. Applied while /styleguide sets <html data-kx>. -----
+   Screen and card titles are Poppins; everything else is Open Sans. Muted text is darkened so it passes 4.5:1
+   on the grey page and card backgrounds too (it was 4.36:1 on #F5F5F5). */
+html[data-kx] {
+  --muted-foreground: 100 100 100;
+  /* Body text is a dark grey with a violet cast too, not near-black. 16:1 on white. */
+  --foreground: 30 26 38;
+  /* Surfaces are a barely-warm off-white, not #FFF (R7). Cards stay lighter than the grey page. */
+  --background: 253 252 253; --card: 253 252 253; --popover: 253 252 253;
+  /* Primary is a dark grey with a violet cast, not black; its label is the warm pink-white */
+  --primary: 42 37 50; --primary-foreground: 255 234 240;
+}
+/* Button labels: semibold, and trimmed to cap height so the text centres optically (ignored where unsupported) */
+html[data-kx] button > .select-none { font-weight: 600; letter-spacing: 0.005em; text-box: trim-both cap alphabetic; }
+html[data-kx] body, html[data-kx] .font-sans, html[data-kx] .font-body { font-family: 'Open Sans', system-ui, -apple-system, sans-serif; }
+html[data-kx] .font-heading { font-family: Poppins, 'Open Sans', system-ui, sans-serif; letter-spacing: -0.01em; font-weight: 600; }
+html[data-kx] .shadow-k-sm { box-shadow: 0 1px 2px rgba(30, 24, 56, 0.04), 0 6px 16px -4px rgba(30, 24, 56, 0.08); }
+html[data-kx] .shadow-k-md { box-shadow: 0 1px 2px rgba(30, 24, 56, 0.03), 0 8px 24px -6px rgba(30, 24, 56, 0.08), 0 24px 48px -16px rgba(30, 24, 56, 0.1); }
+html[data-kx] .shadow-k-lg { box-shadow: 0 2px 4px rgba(30, 24, 56, 0.03), 0 16px 40px -8px rgba(30, 24, 56, 0.1), 0 40px 80px -24px rgba(30, 24, 56, 0.16); }
+
+.k-orb { border-radius: 9999px; background: var(--k-orb); box-shadow: inset 0 -12px 30px rgba(150, 130, 230, .25), 0 20px 60px -20px rgba(200, 120, 190, .45); animation: k-breathe 8s ease-in-out infinite; }
+.k-text-shadow { text-shadow: 0 1px 2px rgba(0, 0, 0, 0.22); }
+.k-shade { background-image: linear-gradient(to top, rgba(0, 0, 0, .45), transparent 60%); }
+
+/* ----- Motion ----- */
+/* Uses the individual translate/scale properties, not `transform`, so it stacks with Tailwind's
+   transform utilities (e.g. -translate-x-1/2 centering) instead of overwriting them. */
+@keyframes k-in {
+  from { opacity: var(--k-in-o, 1); translate: var(--k-in-x, 0) var(--k-in-y, 0); scale: var(--k-in-s, 1); }
+  to { opacity: 1; translate: none; scale: none; }
+}
+@keyframes k-breathe { 0%, 100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.04) rotate(8deg); } }
+@keyframes k-pan { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+@keyframes k-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes k-flash { 0% { opacity: .9; } 100% { opacity: 0; } }
+@keyframes k-scanline { 0% { top: -24px; } 100% { top: 100%; } }
+@keyframes k-flip { 0%, 60% { transform: rotateY(0deg); } 80% { transform: rotateY(90deg); } 80.01% { transform: rotateY(-90deg); } 100% { transform: rotateY(0deg); } }
+@keyframes k-float { 0%, 100% { translate: 0 0; } 50% { translate: 0 -6px; } }
+
+.k-pan { background-size: auto 100%; background-repeat: repeat-x; animation: k-pan 60s ease-in-out infinite; }
+.k-shimmer { background: linear-gradient(90deg, rgba(23, 24, 40, .05) 25%, rgba(23, 24, 40, .1) 50%, rgba(23, 24, 40, .05) 75%); background-size: 200% 100%; animation: k-shimmer 1.4s linear infinite; }
+.animate-in { animation: k-in .34s var(--k-spring) both; }
+.fade-in { --k-in-o: 0; }
+.zoom-in-95 { --k-in-s: .95; --k-in-o: 0; }
+.slide-in-from-bottom { --k-in-y: 56px; --k-in-o: 0; }
+.slide-in-from-bottom-2 { --k-in-y: 8px; --k-in-o: 0; }
+.slide-in-from-top-2 { --k-in-y: -8px; --k-in-o: 0; }
+.slide-in-from-right { --k-in-x: 40px; --k-in-o: 0; }
+
+/* Reduced motion keeps feedback, drops movement: entrances become short cross-fades, loops stop. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; }
+  html .animate-in { --k-in-x: 0 !important; --k-in-y: 0 !important; --k-in-s: 1 !important; animation-duration: 160ms !important; }
+}
+
+/* Reduced transparency: glass turns into solid, still-dark surfaces so text never sits on a busy room */
+@media (prefers-reduced-transparency: reduce) {
+  html .k-glass { background: rgb(28, 30, 38); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  html .k-panel, html .k-panel-strong { background: rgb(22, 24, 32); -webkit-backdrop-filter: none; backdrop-filter: none; }
+  html .k-scrim { background: rgba(8, 10, 16, 0.82); -webkit-backdrop-filter: none; backdrop-filter: none; }
+}
+
+/* More contrast: near-solid glass with a clear edge */
+@media (prefers-contrast: more) {
+  html .k-glass { background: rgba(12, 14, 20, 0.88); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.7); }
+  html .k-panel { background: rgba(12, 14, 20, 0.94); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.55); }
+}

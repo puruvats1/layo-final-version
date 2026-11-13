@@ -1,0 +1,31 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "kith-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000,
+      "autoPort": false
+    },
+    {
+      "name": "kith-running",
+      "url": "http://localhost:3000",
+      "port": 3000
+    },
+    {
+      "name": "kith-gluestack",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "3217"
+      ],
+      "port": 3217,
+      "autoPort": false
+    }
+  ]
+}

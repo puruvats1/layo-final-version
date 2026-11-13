@@ -1,0 +1,258 @@
+/* Layo V4 prototype: additions on top of the design system tokens (kith-v4.css).
+   One rule for the AI: the petal shape in rose means "the AI found or said this". Nothing else is rose. */
+:root { --staged: var(--paper-50); --staged-edge: var(--ink-900); --proposal: var(--rose-300); }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body, #root { height: 100%; margin: 0; background: #1c1917; overscroll-behavior: none; }
+body { font-family: var(--font); -webkit-font-smoothing: antialiased; }
+.k4 { width: 100%; max-width: 430px; height: 100dvh; margin: 0 auto; user-select: none; -webkit-user-select: none; }
+.k4 input, .k4 textarea { user-select: text; -webkit-user-select: text; font: inherit; color: inherit; }
+:where(.k4) button { font-family: inherit; } :where(.k4 button) { color: inherit; }
+.page { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 56px 20px 24px; gap: 16px; overflow-y: auto; }
+.page .foot { margin-top: auto; display: flex; gap: 12px; align-items: center; padding-top: 12px; }
+.col { display: flex; flex-direction: column; } .rowx { display: flex; align-items: center; } .wrap { display: flex; flex-wrap: wrap; gap: 8px; }
+.g1 { gap: 4px; } .g2 { gap: 8px; } .g3 { gap: 12px; } .g4 { gap: 16px; } .grow { flex: 1; min-width: 0; }
+.stage { position: absolute; inset: 0; background: #0a0c10; touch-action: none; }
+.stage canvas { display: block; width: 100%; height: 100%; }
+.pin { position: absolute; left: 0; top: 0; z-index: 2; will-change: transform; }
+.topbar { position: absolute; top: 12px; left: 12px; right: 12px; z-index: var(--z-chrome); display: flex; justify-content: space-between; gap: 6px; pointer-events: none; }
+.topbar > * { pointer-events: auto; }
+.bar { display: flex; align-items: center; height: 48px; padding: 0; position: relative; }
+.bar .badge { position: absolute; top: -4px; right: -4px; }
+.bottom { position: absolute; left: 12px; right: 12px; bottom: 14px; z-index: var(--z-chrome); display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+.bottom > * { pointer-events: auto; }
+.over { position: absolute; left: 12px; right: 12px; z-index: var(--z-card); }
+.scrimx { position: absolute; inset: 0; background: var(--scrim); z-index: 29; animation: fade var(--dur-3) var(--ease-out); }
+.sheet { max-height: 86%; display: flex; flex-direction: column; animation: up var(--dur-3) var(--ease-out); }
+.sheet .body { padding: 8px 20px 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+.dialog { top: 50%; transform: translateY(-50%); animation: fade var(--dur-2) var(--ease-out); }
+.pop { animation: pop var(--dur-2) var(--ease-out); }
+@keyframes up { from { transform: translateY(40px); opacity: 0; } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes pop { from { transform: scale(.94); opacity: 0; } }
+@keyframes sweep { to { transform: rotate(360deg); } }
+/* The AI's mark */
+.pet { display: inline-grid; place-items: center; flex: none; color: var(--text-1); background: var(--ai);
+  -webkit-mask: url(petal.svg) center / contain no-repeat; mask: url(petal.svg) center / contain no-repeat; }
+.pet-wrap { position: relative; display: inline-grid; place-items: center; flex: none; }
+.pet-wrap > b { position: absolute; font-family: var(--font-mono); font-size: 12px; font-weight: 500; color: var(--ink-900); }
+.pet-wrap > i { position: absolute; top: -1px; right: -1px; width: 9px; height: 9px; border-radius: 9px; background: var(--amber-600); box-shadow: 0 0 0 2px var(--paper-50); }
+.mk { border: 0; background: none; padding: 6px; cursor: pointer; filter: drop-shadow(0 1px 3px rgba(43,37,34,.45)); }
+.aicard { border-left: 0; }
+.ai-line { display: flex; gap: 10px; align-items: flex-start; }
+.ai-tag { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--ai-strong); }
+.menu { padding: 8px; border-radius: var(--r-lg); min-width: 200px; }
+.menu button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 0 12px; border: 0; background: none; border-radius: 12px; font-size: 14px; font-weight: 500; cursor: pointer; text-align: left; }
+.menu button:hover { background: rgba(43,37,34,.06); }
+.ghostnum { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 30px; background: var(--ai); font-family: var(--font-mono); font-size: 14px; box-shadow: 0 0 0 3px var(--paper-50), var(--lift-1); border: 0; cursor: pointer; }
+.ghostnum.is-on { background: var(--ai-strong); color: var(--paper-50); }
+.hscroll { display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; padding: 2px; } .hscroll::-webkit-scrollbar { display: none; }
+.tile { border: 0; background: none; padding: 0; cursor: pointer; text-align: left; }
+.swatch { width: 100%; height: 100%; border-radius: inherit; display: grid; grid-template-columns: 1fr 1fr; overflow: hidden; }
+.sel-ring { box-shadow: 0 0 0 2.5px var(--ink-900); }
+.progress.slim { position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: 0; z-index: 5; }
+.progress i { transition: width 400ms linear; }
+.kbd { resize: none; border: 0; outline: 0; background: transparent; flex: 1; min-width: 0; font-size: 15px; }
+.tag-before { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px; background: var(--paper-200); color: var(--text-2); }
+.hint { height: 44px; padding: 0 16px 0 6px; display: inline-flex; align-items: center; gap: 8px; border-radius: 22px 22px 22px 6px; white-space: nowrap; font-size: 13px; font-weight: 600; pointer-events: none; }
+.hint span { width: 32px; height: 32px; border-radius: 99px; background: var(--butter-300); display: grid; place-items: center; }
+.edge { height: 36px; padding: 0 12px; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; font-size: 12px; font-weight: 600; pointer-events: none; }
+.name-pill { height: 36px; padding: 0 14px; display: inline-flex; align-items: center; font-size: 13px; font-weight: 600; pointer-events: none; white-space: nowrap; }
+.tick { width: 28px; height: 28px; border-radius: 99px; border: 0; display: grid; place-items: center; background: var(--surface-inverse); color: var(--text-inverse); box-shadow: 0 0 0 3px var(--paper-50); cursor: pointer; }
+.tick.off { background: var(--paper-200); color: transparent; }
+/* Compact chrome: the room stays in view */
+.ai-ic { display: inline-block; flex: none; background: var(--ai-strong); -webkit-mask: url(kith-ai.svg) center / contain no-repeat; mask: url(kith-ai.svg) center / contain no-repeat; }
+.seg-ic button { width: 48px; min-width: 48px; padding: 0; justify-content: center; }
+.seg-ic button .ai-ic { background: var(--rose-300); }
+.seg-ic button.is-on .ai-ic { background: var(--ai-strong); }
+.bottom > .dock { display: flex; align-items: flex-end; gap: 8px; pointer-events: none; }
+.dock > * { pointer-events: auto; }
+.row2 { position: absolute; top: 68px; left: 12px; z-index: var(--z-chrome); display: flex; gap: 6px; }
+.savebtn { border: 0; padding: 0 16px 0 12px; gap: 6px; font-size: 14px; font-weight: 600; cursor: pointer; }
+/* The menu attached to an object */
+.omenu { display: flex; flex-direction: column; align-items: center; padding: 4px; border-radius: 24px; box-shadow: var(--lift-2); }
+.omenu-name { display: flex; align-items: center; gap: 5px; padding: 5px 12px 1px; font-size: 12px; line-height: 16px; font-weight: 600; white-space: nowrap; }
+.omenu-name i { font-style: normal; font-weight: 500; color: var(--text-2); }
+.omenu .it { position: relative; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 99px; background: none; cursor: pointer; }
+.omenu .it:hover { background: rgba(43,37,34,.07); }
+.omenu .cnt { position: absolute; top: 3px; right: 1px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 99px; background: var(--ai-strong); color: var(--paper-50); font-family: var(--font-mono); font-size: 10px; line-height: 16px; text-align: center; }
+.omenu.turn { flex-direction: row; gap: 8px; padding: 4px 4px 4px 14px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.omenu.turn .done { min-height: 40px; padding: 0 16px; border: 0; border-radius: 99px; background: var(--surface-inverse); color: var(--text-inverse); font-size: 14px; font-weight: 600; cursor: pointer; }
+/* The knob on the primary button is not the AI, so it is not rose */
+.btn-primary .knob { background: var(--paper-50); }
+
+/* Edit canvas side pills: undo/redo (left) and preview/gyro (right), stacked under the top bar */
+.side { position: absolute; top: 68px; z-index: var(--z-chrome); }
+.side-l { left: 12px; } .side-r { right: 12px; }
+.vbar { flex-direction: column; height: auto; width: 48px; }
+.btn-icon.is-on { background: var(--ai-soft); }
+.bar .btn-icon { position: relative; }
+
+/* ---- The AI, one language: the prompt bar and its cards ---- */
+.bottom { gap: 16px; }
+.askbar { position: relative; width: 100%; }
+.askbar .ctx { position: absolute; top: -12px; left: 14px; height: 24px; padding: 0 10px; font-size: 11px; background: var(--surface-raised); box-shadow: var(--lift-1); max-width: 70%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fade-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 36px), transparent); padding-right: 28px; }
+.btn-sm { min-height: 38px; padding: 0 16px; font-size: 14px; }
+.btn-primary.btn-sm { min-height: 40px; padding: 0 20px; font-size: 14px; }
+.aic { padding: 12px 14px; border-radius: 22px; display: flex; flex-direction: column; gap: 6px; }
+.aic-h { display: flex; align-items: center; gap: 8px; min-height: 26px; }
+.aic-o { font-size: 12px; font-weight: 500; color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.aic-h .kind { height: 22px; padding: 0 8px; font-size: 11px; }
+.aic-nav { width: 28px; height: 28px; }
+.aic-t { font-size: 15px; line-height: 20px; font-weight: 600; letter-spacing: -.005em; }
+.aic-b { margin: 0; font-size: 13px; line-height: 18px; color: var(--text-2); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.aic-f { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 4px; }
+.aic-opt { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none; border-radius: 14px; padding: 5px 8px; text-align: left; cursor: pointer; }
+.aic-opt.is-on { background: var(--ai-soft); }
+
+/* ---- Assets drawer ---- */
+.drawer { display: flex; flex-direction: column; border-radius: 28px; padding: 0 12px 12px; overflow: hidden; }
+.drawer-grip { flex: none; display: grid; place-items: center; height: 26px; margin: 0 -12px; cursor: ns-resize; touch-action: none; }
+.drawer-grip .handle { margin: 0; }
+.drawer-h { flex: none; display: flex; align-items: center; gap: 8px; padding-bottom: 10px; }
+.drawer-grid { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 10px; align-content: start; scrollbar-width: none; }
+.drawer-grid::-webkit-scrollbar { display: none; }
+.tile .pic { position: relative; display: grid; place-items: center; overflow: hidden; }
+.tile .pic img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
+
+/* ---- Tap menu: one pill, the object's name on its top edge like the prompt bar's context ---- */
+.omenu { position: relative; flex-direction: row; border-radius: 99px; padding: 4px 6px; box-shadow: var(--lift-2); }
+.omenu .omenu-name { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); height: 24px; padding: 0 10px; border-radius: 99px; background: var(--surface-raised); box-shadow: var(--lift-1); color: var(--ai-strong); font-size: 11px; font-weight: 600; z-index: 1; }
+.omenu.turn { padding: 4px 4px 4px 14px; }
+/* ---- A signal on the moved object: the petal turns, then opens into the message ---- */
+.sigpin { display: inline-flex; align-items: center; height: 34px; padding: 0 6px; border-radius: 99px; pointer-events: none; white-space: nowrap; transition: padding .25s var(--ease-out); }
+.sigpin .sigtext { max-width: 0; opacity: 0; overflow: hidden; font-size: 12px; font-weight: 600; transition: max-width .32s var(--ease-out), opacity .2s .08s, margin .3s; }
+.sigpin.is-open { padding: 0 12px 0 6px; }
+.sigpin.is-open .sigtext { max-width: 260px; opacity: 1; margin-left: 6px; }
+/* ---- Drag and drop from the drawer ---- */
+.tile { -webkit-touch-callout: none; }
+.dnd { position: fixed; left: 0; top: 0; width: 88px; height: 88px; z-index: 80; pointer-events: none; will-change: transform; }
+.dnd-in { width: 100%; height: 100%; display: grid; place-items: center; filter: drop-shadow(0 14px 12px rgba(43, 37, 34, .3)); animation: dndin .26s cubic-bezier(.2, .9, .3, 1.25) backwards; transition: transform .24s var(--ease-out), opacity .24s; }
+.dnd-in img { width: 100%; height: 100%; object-fit: contain; }
+.dnd-in.drag { transform: scale(1.12); }
+.dnd-in.drop { transform: scale(.5); opacity: 0; }
+.dnd-in.back { transform: scale(.8); opacity: 0; transition-duration: .28s; }
+@keyframes dndin { from { transform: scale(.6); opacity: 0; } }
+
+/* ---- Linked objects: one menu, the link sits between the two names ---- */
+.omenu-name { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.omenu-link { display: inline-grid; place-items: center; width: 22px; height: 22px; margin: 0 -2px; padding: 0; border: 0; border-radius: 99px; background: var(--ai-soft); color: var(--ai-strong); cursor: pointer; }
+.omenu-link .ic { width: 14px; height: 14px; }
+/* The check marker lands in the menu from the object below it */
+.omenu .mkfly { animation: mkfly .32s cubic-bezier(.2, .9, .3, 1.15) backwards; }
+@keyframes mkfly { from { transform: translateY(52px) scale(.7); opacity: .6; } }
+
+/* ---- Tap menu shape: a wide pill with its name on a tab at the top left ---- */
+.omenu { min-width: 236px; justify-content: space-between; padding: 4px 8px; }
+.omenu .it { flex: 1; }
+.omenu .it.is-on { background: var(--ai-soft); }
+.omenu .omenu-name { top: auto; bottom: 100%; left: 22px; transform: none; height: 28px; padding: 0 14px 2px; border-radius: 14px 14px 0 0; background: var(--surface-raised); box-shadow: 0 -2px 8px rgba(43, 37, 34, .08); margin-bottom: -1px; }
+
+/* ---- Tap menu buttons are the same multi-button pill as the edit page's ---- */
+.omenu { min-width: 0; padding: 0; justify-content: flex-start; }
+.omenu .btn-icon { flex: none; }
+/* ---- Hints are pills ---- */
+.hint { border-radius: 99px; }
+/* ---- Rotation: one slider ---- */
+.rotbar { display: flex; align-items: center; gap: 14px; height: 56px; padding: 0 20px; width: 100%; }
+.rotbar input[type=range] { flex: 1; min-width: 0; height: 32px; margin: 0; background: transparent; -webkit-appearance: none; appearance: none; touch-action: none; }
+.rotbar input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 6px; background: var(--paper-200); }
+.rotbar input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; margin-top: -11px; border-radius: 50%; background: var(--surface-inverse); box-shadow: 0 0 0 3px var(--paper-50), var(--lift-1); }
+.rotbar input[type=range]::-moz-range-track { height: 6px; border-radius: 6px; background: var(--paper-200); }
+.rotbar input[type=range]::-moz-range-thumb { width: 28px; height: 28px; border: 0; border-radius: 50%; background: var(--surface-inverse); box-shadow: 0 0 0 3px var(--paper-50), var(--lift-1); }
+.rotdeg { min-width: 44px; text-align: right; }
+
+/* ---- Mapping the room: between the setup check and the editor ---- */
+.mapping { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 24px; text-align: center; background: var(--paper-50); animation: fade var(--dur-3) var(--ease-out); }
+.mapbar { width: 160px; height: 6px; margin-top: 8px; border-radius: 6px; background: var(--paper-200); overflow: hidden; }
+.mapbar i { display: block; height: 100%; border-radius: 6px; background: var(--ai-strong); transition: width .8s var(--ease-out); }
+
+/* ---- Asset tiles: the same soft studio light behind every thumbnail ---- */
+.drawer-grid .tile .pic { border-radius: 18px; background: radial-gradient(circle at 50% 28%, rgba(255, 255, 255, .95), rgba(255, 255, 255, 0) 68%), linear-gradient(180deg, var(--paper-50), var(--surface-sunken)); box-shadow: inset 0 0 0 1px rgba(43, 37, 34, .05); }
+.drawer-grid .tile .pic img { filter: drop-shadow(0 6px 5px rgba(43, 37, 34, .16)); }
+
+/* ---- Labels that do not fit drift left and right instead of spilling out of their tab ---- */
+.mq { display: block; flex: 0 1 auto; min-width: 0; max-width: 100%; overflow: hidden; white-space: nowrap; }
+.mq-in { display: inline-block; }
+.mq-in.is-run { animation: mq ease-in-out infinite alternate; }
+@keyframes mq { 0%, 18% { transform: translateX(0); } 82%, 100% { transform: translateX(calc(-1 * var(--d))); } }
+@media (prefers-reduced-motion: reduce) { .mq-in.is-run { animation: none; } }
+.omenu .omenu-name { max-width: calc(100% - 28px); }
+.omenu-name > .pet { flex: none; }
+.omenu-name > .mq { flex: 1 1 auto; }
+.askbar .ctx .mq { flex: 0 1 auto; }
+
+/* ---- Tap menu: the name tab sits above the pill, so it is never wider than it can show ---- */
+.omenwrap { display: flex; flex-direction: column; align-items: flex-start; }
+.omenwrap .omenu-name { position: static; transform: none; margin: 0 0 -1px 22px; height: 28px; max-width: 280px; padding: 0 14px 2px; border-radius: 14px 14px 0 0; background: var(--surface-raised); box-shadow: 0 -2px 8px rgba(43, 37, 34, .08); color: var(--ai-strong); font-size: 11px; font-weight: 600; z-index: 1; }
+/* ---- Prompt bar: text on the left, send always on the right ---- */
+.askbar { text-align: left; justify-content: flex-start; }
+.askbar .ph { text-align: left; }
+.askbar > .send { margin-left: auto; flex: none; }
+
+/* ---- Selection bar: a small count badge instead of the words "N selected" ---- */
+.selcount { display: inline-grid; place-items: center; flex: none; min-width: 28px; height: 28px; padding: 0 8px; border-radius: 99px; background: var(--surface-inverse); color: var(--text-inverse); font-family: var(--font-mono); font-size: 13px; font-weight: 500; }
+
+/* ---- Timed suggestions on the canvas: a small centred pill that ends in a question and can be dismissed ---- */
+.nudge { display: inline-flex; align-items: center; align-self: center; height: 40px; padding: 0 4px; }
+.nudge.is-ai { background: var(--ai-soft); }
+.nudge-go { display: inline-flex; align-items: center; gap: 8px; height: 100%; padding: 0 6px 0 14px; border: 0; background: none; font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
+.nudge-x { width: 32px; height: 32px; }
+
+/* ---- Rotation guide: how to turn, shown as a gesture ---- */
+.rotguide { display: flex; align-items: center; gap: 14px; height: 56px; padding: 0 20px; width: 100%; }
+.rotg-track { display: inline-flex; align-items: center; gap: 10px; color: var(--text-2); }
+.rotg-hand { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 99px; background: var(--butter-300); color: var(--text-1); animation: rotg 1.6s ease-in-out infinite alternate; }
+@keyframes rotg { from { transform: translateX(-9px); } to { transform: translateX(9px); } }
+@media (prefers-reduced-motion: reduce) { .rotg-hand { animation: none; } }
+
+/* ---- Microphone: listening ---- */
+.mic-live { animation: micpulse 1.2s ease-in-out infinite; }
+@keyframes micpulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(168, 52, 95, .35); } 50% { box-shadow: 0 0 0 8px rgba(168, 52, 95, 0); } }
+@media (prefers-reduced-motion: reduce) { .mic-live { animation: none; } }
+
+/* ---- A floating panel in the middle of the screen (Edit object) ---- */
+.panel { position: absolute; left: 16px; right: 16px; top: 50%; transform: translateY(-50%); max-height: 82%; display: flex; flex-direction: column; z-index: var(--z-sheet); animation: panelin var(--dur-2) var(--ease-out); }
+.panel-h { min-height: 56px; padding: 8px 10px 0 20px; flex: none; }
+.panel .body { padding: 6px 20px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.panel-f { flex: none; padding: 12px 20px 16px; border-top: 1px solid var(--border-1); }
+@keyframes panelin { from { opacity: 0; transform: translateY(-48%) scale(.96); } }
+
+/* ---- Scan: a 360 capture ---- */
+.scan-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.scan-grid { position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(to right, transparent calc(33.33% - 1px), rgba(251, 247, 241, .38) calc(33.33% - 1px), rgba(251, 247, 241, .38) 33.33%, transparent 33.33%, transparent calc(66.66% - 1px), rgba(251, 247, 241, .38) calc(66.66% - 1px), rgba(251, 247, 241, .38) 66.66%, transparent 66.66%),
+    linear-gradient(to bottom, transparent calc(33.33% - 1px), rgba(251, 247, 241, .38) calc(33.33% - 1px), rgba(251, 247, 241, .38) 33.33%, transparent 33.33%, transparent calc(66.66% - 1px), rgba(251, 247, 241, .38) calc(66.66% - 1px), rgba(251, 247, 241, .38) 66.66%, transparent 66.66%); }
+.scan-dim { position: absolute; inset: 0; background: rgba(10, 12, 16, .7); animation: fade var(--dur-3) var(--ease-out); }
+.scan-level { position: absolute; left: 50%; transform: translateX(-50%); z-index: var(--z-chrome); display: inline-flex; align-items: center; gap: 8px; max-width: calc(100% - 40px); height: 32px; padding: 0 14px; font-size: 13px; font-weight: 600; color: var(--text-1); white-space: nowrap; pointer-events: none; }
+.scan-level .dot { width: 8px; height: 8px; border-radius: 99px; background: var(--amber-600); }
+.scan-level .dot.ok { background: var(--signal-fine, #2f8c64); }
+.scan-tips { position: absolute; left: 20px; right: 20px; top: 50%; transform: translateY(-50%); z-index: var(--z-card); padding: 20px; display: flex; flex-direction: column; gap: 14px; color: var(--text-1); animation: panelin var(--dur-2) var(--ease-out); }
+.scan-say { text-shadow: 0 1px 8px rgba(0, 0, 0, .55); }
+.shutter { position: relative; width: 88px; height: 88px; padding: 0; border: 0; background: none; cursor: pointer; }
+.shutter:disabled { cursor: default; }
+.shutter svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.shutter-core { position: absolute; inset: 14px; border-radius: 99px; background: var(--paper-50); transition: transform .3s var(--ease-out), background .3s; }
+.shutter:active .shutter-core { transform: scale(.92); }
+.shutter:disabled .shutter-core { transform: scale(.5); background: var(--butter-300); }
+.scan-note { white-space: normal; text-align: center; height: auto; padding: 8px 16px; border-radius: 20px; line-height: 18px; width: max-content; }
+
+/* ---- Assets drawer: the handle and the pills float above one container of tiles ---- */
+.drawer-wrap { display: flex; flex-direction: column; gap: 4px; }
+.drawer-grip { height: 22px; margin: 0; display: grid; place-items: center; cursor: ns-resize; touch-action: none; }
+.drawer-grip .handle { width: 44px; height: 6px; border-radius: 6px; background: rgba(251, 247, 241, .92); box-shadow: var(--lift-1); margin: 0; }
+.drawer-h { padding: 0 2px 4px; }
+.drawer-wrap .drawer { padding: 12px; transition: height .38s var(--ease-out); }
+.drawer-wrap .drawer-grid { padding-bottom: 2px; }
+/* ---- Rotation: a cross beside a tick, on the object ---- */
+.rotact { gap: 2px; padding: 0 4px; height: 48px; }
+.rotact .rotok { background: var(--surface-inverse); color: var(--text-inverse); }
+.rotact .rotok:hover { background: var(--surface-inverse-hover); }
+
+/* ---- Smaller notifications and suggestions above the prompt bar ---- */
+.bottom .toast { min-height: 36px; padding: 0 4px 0 14px; font-size: 13px; gap: 8px; }
+.bottom .toast .btn-link { font-size: 13px; padding: 0 10px !important; }
+.nudge { height: 34px; }
+.nudge-go { gap: 6px; padding: 0 4px 0 12px; font-size: 12px; }
+.nudge-x { width: 28px; height: 28px; }
+.bottom .hscroll .chip-sm { min-height: 28px; padding: 0 11px; font-size: 12px; }
