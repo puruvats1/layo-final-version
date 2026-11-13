@@ -1,0 +1,41 @@
+{
+  "name": "Layo - Adaptive Spatial Room Design",
+  "short_name": "Layo",
+  "id": "./",
+  "start_url": "./?screen=home",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "standalone",
+    "fullscreen",
+    "minimal-ui"
+  ],
+  "orientation": "portrait",
+  "background_color": "#1c1917",
+  "theme_color": "#1c1917",
+  "categories": [
+    "lifestyle",
+    "productivity"
+  ],
+  "description": "See how your room could look and feel before you move a thing. Scan it, move things around on your phone, and see what each choice gives and takes.",
+  "icons": [
+    {
+      "src": "./icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}
